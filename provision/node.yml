@@ -1,0 +1,49 @@
+---
+# provision a kubernetes node from localhost
+- hosts: localhost
+  vars_files:
+    - "{{ playbook_dir }}/../vars.yml"
+    - "{{ playbook_dir }}/../vars_aws.yml"
+  vars:
+    packages:
+      - s3://{{ bucket_name }}/archives/atomic/atomic-{{ version.atomic }}-linux-amd64.tar.gz
+      - s3://{{ bucket_name }}/archives/cri-o/cri-o-{{ version.crio }}-linux-amd64.tar.gz
+      - s3://{{ bucket_name }}/archives/cni/cni-plugins-amd64-{{ version.cni }}.tgz
+      - s3://{{ bucket_name }}/archives/kubernetes/kubernetes-node-{{ version.kubernetes }}-linux-amd64.tar.gz
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: create kubernetes node
+      ec2:
+        count: "{{ node_count }}"
+        instance_type: "{{ instance_type.cluster }}"
+        image: "{{ image_id }}"
+        vpc_subnet_id: "{{ subnet_id.cluster }}"
+        region: "{{ region }}"
+        key_name: "{{ key_name }}"
+        instance_profile_name: "{{ instance_profile_name }}"
+        group_id:
+          - "{{ sg_id.cluster }}"
+          - "{{ sg_id.node }}"
+        termination_protection: no
+        wait: yes
+        volumes:
+          - "{{ root_volume }}"
+        instance_tags:
+          Name: "{{ app_name }}-node"
+          Role: node
+          App: "{{ app_name }}"
+        user_data: "{{ user_data }}"
+      register: ec2
+
+    - name: update vars file
+      lineinfile:
+        path: "{{ playbook_dir }}/../hosts"
+        insertafter: 'node'
+        line: "{{ item.private_ip }}  # node ANSIBLE_MANAGED"
+      with_items: "{{ ec2.instances }}"
+
+    - name: print instance details
+      debug:
+        msg: "node - {{ item.id }} / {{ item.private_ip }}"
+      with_items: "{{ ec2.instances }}"

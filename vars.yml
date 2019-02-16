@@ -1,0 +1,17 @@
+---
+# this file includes all the common variables
+app_name: cornet
+node_count: 2
+# configure options
+tmp_location: /tmp/cornet
+tls_location: /dev/shm/kubernetes
+cluster_cidr: 172.17.0.0/16
+service_cluster_cidr: 172.27.0.0/16
+version:
+  haproxy: 1.9.4
+  etcd: v3.3.12
+  registry: v2.7.1
+  kubernetes: v1.12.5
+  crio: v1.12.5
+  cni: v0.7.1
+  atomic: v20190213

@@ -1,0 +1,33 @@
+---
+# provision elb from localhost
+- hosts: localhost
+  vars_files:
+    - "{{ playbook_dir }}/../vars.yml"
+    - "{{ playbook_dir }}/../vars_aws.yml"
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: create elb
+      elb_classic_lb:
+        name: "{{ elb_name }}"
+        state: present
+        security_group_ids:
+          - "{{  sg_id.elb }}"
+        subnets:
+          - "{{ subnet_id.bastion }}"
+        region: "{{ region }}"
+        listeners:
+          - protocol: http
+            load_balancer_port: 80
+            instance_port: 80
+        health_check:
+            ping_protocol: tcp
+            ping_port: 80
+            response_timeout: 5
+            interval: 30
+            unhealthy_threshold: 2
+            healthy_threshold: 4
+        tags:
+          Name: "{{ elb_name }}"
+          Role: elb
+          App: "{{ app_name }}"

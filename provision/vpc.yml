@@ -1,0 +1,119 @@
+---
+# provision vpc from localhost
+- hosts: localhost
+  vars_files:
+    - "{{ playbook_dir }}/../vars.yml"
+    - "{{ playbook_dir }}/../vars_aws.yml"
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: create dhcp options set
+      ec2_vpc_dhcp_option:
+        region: "{{ region }}"
+        domain_name: "{{ region }}.compute.internal"
+        dns_servers:
+          - AmazonProvidedDNS
+        tags:
+          Name: "{{ app_name }}"
+          App: "{{ app_name }}"
+      register: dhcp_option
+
+    - name: create VPC
+      ec2_vpc_net:
+        name: "{{ app_name }}"
+        cidr_block: "{{ cidr.vpc }}"
+        region: "{{ region }}"
+        dhcp_opts_id: "{{ dhcp_option.dhcp_options_id }}"
+        tags:
+          Name: "{{ app_name }}"
+          App: "{{ app_name }}"
+      register: net
+
+    - name: update vpc_id in vars file
+      replace:
+        path: "{{ playbook_dir }}/../vars_aws.yml"
+        regexp: "vpc_id: vpc-[0-9a-f]{17}"
+        replace: "vpc_id: {{ net.vpc.id }}"
+
+    - name: create public subnet
+      ec2_vpc_subnet:
+        vpc_id: "{{ net.vpc.id }}"
+        region: "{{ region }}"
+        az: "{{ region }}{{ item.key }}"
+        cidr: "{{ item.value }}"
+        tags:
+          Name: "{{ app_name }}-public-{{ item.key }}"
+          App: "{{ app_name }}"
+      with_dict: "{{ cidr.subnet.public }}"
+      register: subnet_public
+
+    - name: update public subnet_id in vars file
+      replace:
+        path: "{{ playbook_dir }}/../vars_aws.yml"
+        regexp: "bastion: subnet-[0-9a-f]{17}"
+        replace: "bastion: {{ subnet_public.results[0].subnet.id }}"
+
+    - name: create private subnet
+      ec2_vpc_subnet:
+        vpc_id: "{{ net.vpc.id }}"
+        region: "{{ region }}"
+        az: "{{ region }}{{ item.key }}"
+        cidr: "{{ item.value }}"
+        tags:
+          Name: "{{ app_name }}-private-{{ item.key }}"
+          App: "{{ app_name }}"
+      with_dict: "{{ cidr.subnet.private }}"
+      register: subnet_private
+
+    - name: update private subnet_id in vars file
+      replace:
+        path: "{{ playbook_dir }}/../vars_aws.yml"
+        regexp: "cluster: subnet-[0-9a-f]{17}"
+        replace: "cluster: {{ subnet_private.results[0].subnet.id }}"
+
+    - name: create IGW
+      ec2_vpc_igw:
+        vpc_id: "{{ net.vpc.id }}"
+        region: "{{ region }}"
+        tags:
+          Name: "{{ app_name }}-igw"
+          App: "{{ app_name }}"
+      register: igw
+
+    - name: create NAT GW
+      ec2_vpc_nat_gateway:
+        subnet_id: "{{ subnet_public.results[0].subnet.id }}"
+        region: "{{ region }}"
+      register: nat_gw
+
+    - name: create public route table
+      ec2_vpc_route_table:
+        vpc_id: "{{ net.vpc.id }}"
+        region: "{{ region }}"
+        subnets:
+          - "{{ subnet_public.results[0].subnet.id }}"
+          - "{{ subnet_public.results[1].subnet.id }}"
+        routes:
+          - dest: 0.0.0.0/0
+            gateway_id: "{{ igw.gateway_id}}"
+        tags:
+          Name: "{{ app_name }}-public"
+          App: "{{ app_name }}"
+
+    - name: create private route table
+      ec2_vpc_route_table:
+        vpc_id: "{{ net.vpc.id }}"
+        region: "{{ region }}"
+        subnets:
+          - "{{ subnet_private.results[0].subnet.id }}"
+          - "{{ subnet_private.results[1].subnet.id }}"
+        routes:
+          - dest: 0.0.0.0/0
+            gateway_id: "{{ nat_gw.nat_gateway_id}}"
+        tags:
+          Name: "{{ app_name }}-private"
+          App: "{{ app_name }}"
+
+    - name: print VPC details
+      debug:
+        msg: "VPC - {{ net.vpc.id }}"

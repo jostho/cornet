@@ -1,0 +1,229 @@
+---
+# setup/configure bastion from localhost
+- hosts: bastion
+  vars_files:
+    - "{{ playbook_dir }}/../vars.yml"
+  tasks:
+    - name: install packages
+      become: yes
+      package:
+        name:
+          - git
+          - tree
+          - gcc-c++
+          - system-rpm-config
+
+    - name: update /etc/hosts
+      become: yes
+      blockinfile:
+        path: /etc/hosts
+        block: |
+            {{ groups['master'][0] }}  master registry
+            {% for node in groups['node'] %}
+            {{ node }}  node{{ loop.index }}
+            {% endfor %}
+
+    - name: create /etc/ansible/hosts
+      become: yes
+      copy:
+        dest: /etc/ansible/hosts
+        content: |
+            [master]
+            {{ groups['master'][0] }}
+            [node]
+            {% for node in groups['node'] %}
+            {{ node }}
+            {% endfor %}
+
+    - name: update .bashrc
+      blockinfile:
+        path: ~/.bashrc
+        block: |
+            alias kubectl="kubectl -s http://master:8080"
+            alias buildah="sudo buildah"
+            alias podman="sudo podman"
+            alias myipify="curl -sS -m 6 https://api.ipify.org"
+
+    - name: update .bash_profile
+      blockinfile:
+        path: ~/.bash_profile
+        block: |
+            export PS1="[\u@bastion \W]\$ "
+
+    - name: create ansible.cfg
+      copy:
+        dest: ~/.ansible.cfg
+        content: |
+            [defaults]
+            host_key_checking = False
+            retry_files_enabled = False
+            callback_whitelist = profile_tasks
+
+    - name: create system dirs
+      become: yes
+      file:
+        path: "{{ item }}"
+        state: directory
+      with_items:
+        - /etc/containers
+        - /etc/haproxy
+        - /var/lib/haproxy
+        - /var/log/haproxy
+
+    - name: create registries.conf
+      become: yes
+      copy:
+        dest: /etc/containers/registries.conf
+        content: |
+            [registries.search]
+            registries = ['docker.io']
+            [registries.insecure]
+            registries = ['registry:5000']
+
+    - name: create policy.json
+      become: yes
+      copy:
+        dest: /etc/containers/policy.json
+        content: |
+            {
+                "default": [
+                    {
+                        "type": "insecureAcceptAnything"
+                    }
+                ],
+                "transports":
+                    {
+                        "docker-daemon":
+                            {
+                                "": [{"type":"insecureAcceptAnything"}]
+                            }
+                    }
+            }
+
+    - name: extract kubernetes-client tarball
+      unarchive:
+        src: "{{ tmp_location }}/kubernetes-client-{{ version.kubernetes }}-linux-amd64.tar.gz"
+        dest: "{{ tmp_location }}"
+        remote_src: yes
+    - name: copy kubectl binary
+      become: yes
+      copy:
+        src: "{{ tmp_location }}/kubernetes/client/bin/kubectl"
+        dest: /usr/bin
+        mode: 0755
+        remote_src: yes
+
+    - name: extract atomic tarball
+      unarchive:
+        src: "{{ tmp_location }}/atomic-{{ version.atomic }}-linux-amd64.tar.gz"
+        dest: "{{ tmp_location }}"
+        remote_src: yes
+    - name: copy atomic binaries
+      become: yes
+      copy:
+        src: "{{ tmp_location }}/atomic/{{ item }}"
+        dest: /usr/bin
+        mode: 0755
+        remote_src: yes
+      with_items:
+        - runc/runc
+        - buildah/buildah
+        - libpod/podman
+        - skopeo/skopeo
+
+    - name: extract haproxy tarball
+      unarchive:
+        src: "{{ tmp_location }}/haproxy-{{ version.haproxy }}-linux-amd64.tar.gz"
+        dest: "{{ tmp_location }}"
+        remote_src: yes
+    - name: copy haproxy binary
+      become: yes
+      copy:
+        src: "{{ tmp_location }}/haproxy/haproxy"
+        dest: /usr/sbin
+        mode: 0755
+        remote_src: yes
+    - name: copy haproxy service
+      become: yes
+      copy:
+        src: "{{ tmp_location }}/haproxy/haproxy.service"
+        dest: /etc/systemd/system
+        mode: 0755
+        remote_src: yes
+
+    - name: create haproxy.cfg
+      become: yes
+      copy:
+        dest: /etc/haproxy/haproxy.cfg
+        content: |
+            global
+                daemon
+                maxconn 1024
+                log /dev/log  local0
+            defaults
+                mode http
+                log global
+                timeout connect 5s
+                timeout client  60s
+                timeout server  60s
+            frontend fe-http
+                bind *:80
+                option httplog clf
+                option forwardfor
+                capture request header Host len 25
+                default_backend be-nodes
+            backend be-nodes
+            {% for node in groups['node'] %}
+                server node{{ loop.index }} {{ node }}:80 maxconn 512
+            {% endfor %}
+
+    - name: create haproxy rsyslog conf
+      become: yes
+      copy:
+        dest: /etc/rsyslog.d/49-haproxy.conf
+        content: |
+            local0.*  -/var/log/haproxy/haproxy.log
+            & ~
+
+    - name: create playbooks dir
+      file:
+        path: "{{ item }}"
+        state: directory
+      with_items:
+        - ~/playbooks
+        - ~/playbooks/configure
+    - name: copy vars.yml
+      copy:
+        src: "{{ item }}"
+        dest: ~/playbooks/
+      with_items:
+        - "{{ playbook_dir }}/../vars.yml"
+    - name: copy playbooks
+      copy:
+        src: "{{ item }}"
+        dest: ~/playbooks/configure
+      with_items:
+        - "{{ playbook_dir }}/master.yml"
+        - "{{ playbook_dir }}/node.yml"
+        - "{{ playbook_dir }}/Makefile"
+
+    - name: reload systemd
+      become: yes
+      command: systemctl daemon-reload
+
+    - name: enable services
+      become: yes
+      service:
+        name: "{{ item }}"
+        enabled: yes
+      with_items:
+        - haproxy
+
+    - name: restart services
+      become: yes
+      service:
+        name: "{{ item }}"
+        state: restarted
+      with_items:
+        - rsyslog
+        - haproxy

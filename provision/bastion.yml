@@ -1,0 +1,57 @@
+---
+# provision a bastion node from localhost
+- hosts: localhost
+  vars_files:
+    - "{{ playbook_dir }}/../vars.yml"
+    - "{{ playbook_dir }}/../vars_aws.yml"
+  vars:
+    packages:
+      - s3://{{ bucket_name }}/archives/kubernetes/kubernetes-client-{{ version.kubernetes }}-linux-amd64.tar.gz
+      - s3://{{ bucket_name }}/archives/atomic/atomic-{{ version.atomic }}-linux-amd64.tar.gz
+      - s3://{{ bucket_name }}/archives/haproxy/haproxy-{{ version.haproxy }}-linux-amd64.tar.gz
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: create bastion node
+      ec2:
+        instance_type: "{{ instance_type.bastion }}"
+        image: "{{ image_id }}"
+        vpc_subnet_id: "{{ subnet_id.bastion }}"
+        region: "{{ region }}"
+        key_name: "{{ key_name }}"
+        instance_profile_name: "{{ instance_profile_name }}"
+        group_id:
+          - "{{ sg_id.bastion }}"
+        assign_public_ip: yes
+        termination_protection: no
+        wait: yes
+        volumes:
+          - "{{ root_volume }}"
+        instance_tags:
+          Name: "{{ app_name }}-bastion"
+          Role: bastion
+          App: "{{ app_name }}"
+        user_data: |
+          {{ user_data }}
+          amazon-linux-extras install -y ansible2 golang1.11
+      register: ec2
+
+    - name: update hosts file
+      lineinfile:
+        path: "{{ playbook_dir }}/../hosts"
+        insertafter: 'bastion'
+        line: "{{ item.public_ip }}  # bastion ANSIBLE_MANAGED"
+      with_items: "{{ ec2.instances }}"
+
+    - name: wait for ssh
+      wait_for:
+        host: "{{ item.public_ip }}"
+        port: 22
+        delay: 30
+        sleep: 10
+      with_items: "{{ ec2.instances }}"
+
+    - name: print instance details
+      debug:
+        msg: "bastion - {{ item.id }} / {{ item.public_ip }}"
+      with_items: "{{ ec2.instances }}"

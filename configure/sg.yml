@@ -1,0 +1,39 @@
+---
+# authorize public IP in security groups from localhost
+- hosts: localhost
+  vars_files:
+    - "{{ playbook_dir }}/../vars.yml"
+    - "{{ playbook_dir }}/../vars_aws.yml"
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: get public IP
+      ipify_facts:
+
+    - name: update bastion SG
+      ec2_group:
+        name: "{{ app_name }}-bastion"
+        description: "{{ app_name }}-bastion"
+        vpc_id: "{{ vpc_id }}"
+        region: "{{ region }}"
+        rules:
+          - proto: tcp
+            from_port: 22
+            to_port: 22
+            cidr_ip: "{{ ipify_public_ip }}/32"
+          - proto: tcp
+            from_port: 80
+            to_port: 80
+            cidr_ip: "{{ ipify_public_ip }}/32"
+
+    - name: update elb SG
+      ec2_group:
+        name: "{{ app_name }}-elb"
+        description: "{{ app_name }}-elb"
+        vpc_id: "{{ vpc_id }}"
+        region: "{{ region }}"
+        rules:
+          - proto: tcp
+            from_port: 80
+            to_port: 80
+            cidr_ip: "{{ ipify_public_ip }}/32"

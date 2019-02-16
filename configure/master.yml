@@ -1,0 +1,342 @@
+---
+# setup/configure k8s master from bastion
+- hosts: master
+  vars_files:
+    - "{{ playbook_dir }}/../vars.yml"
+  tasks:
+    - name: update /etc/hosts
+      become: yes
+      blockinfile:
+        path: /etc/hosts
+        block: |
+            {{ groups['master'][0] }}  master registry
+
+    - name: update .bashrc
+      blockinfile:
+        path: ~/.bashrc
+        block: |
+            alias kubectl="kubectl -s http://master:8080"
+            alias myipify="curl -sS -m 6 https://api.ipify.org"
+
+    - name: update .bash_profile
+      blockinfile:
+        path: ~/.bash_profile
+        block: |
+            export PS1="[\u@\h/master \W]\$ "
+            export ETCDCTL_API=3
+
+    - name: create system dirs
+      become: yes
+      file:
+        path: "{{ item }}"
+        state: directory
+      with_items:
+        - /etc/etcd
+        - /etc/docker-distribution
+        - /etc/docker-distribution/registry
+        - /etc/kubernetes
+        - /etc/kubernetes/tls
+        - /var/lib/etcd
+        - /var/lib/registry
+
+    - name: create user dirs
+      file:
+        path: "{{ item }}"
+        state: directory
+      with_items:
+        - "{{ tls_location }}"
+
+    - name: extract etcd tarball
+      unarchive:
+        src: "{{ tmp_location }}/etcd-{{ version.etcd }}-linux-amd64.tar.gz"
+        dest: "{{ tmp_location }}"
+        remote_src: yes
+    - name: copy etcd binary
+      become: yes
+      copy:
+        src: "{{ tmp_location }}/etcd-{{ version.etcd }}-linux-amd64/{{ item }}"
+        dest: /usr/bin
+        mode: 0755
+        remote_src: yes
+      with_items:
+        - etcd
+        - etcdctl
+    - name: create etcd.conf
+      become: yes
+      copy:
+        dest: /etc/etcd/etcd.conf
+        content: |
+            ETCD_NAME=default
+            ETCD_DATA_DIR="/var/lib/etcd/default.etcd"
+            ETCD_LISTEN_CLIENT_URLS="http://0.0.0.0:2379"
+            ETCD_ADVERTISE_CLIENT_URLS="http://localhost:2379"
+    - name: create etcd systemd file
+      become: yes
+      copy:
+        dest: /etc/systemd/system/etcd.service
+        content: |
+            [Unit]
+            Description=Etcd Server
+            After=network.target
+            After=network-online.target
+            Wants=network-online.target
+            [Service]
+            Type=notify
+            WorkingDirectory=/var/lib/etcd/
+            EnvironmentFile=-/etc/etcd/etcd.conf
+            # set GOMAXPROCS to number of processors
+            ExecStart=/bin/bash -c "GOMAXPROCS=$(nproc) /usr/bin/etcd --name=\"${ETCD_NAME}\" --data-dir=\"${ETCD_DATA_DIR}\" --listen-client-urls=\"${ETCD_LISTEN_CLIENT_URLS}\""
+            Restart=on-failure
+            LimitNOFILE=65536
+            [Install]
+            WantedBy=multi-user.target
+
+    - name: extract docker-distribution tarball
+      unarchive:
+        src: "{{ tmp_location }}/docker-distribution-{{ version.registry }}-linux-amd64.tar.gz"
+        dest: "{{ tmp_location }}"
+        remote_src: yes
+    - name: copy registry binary
+      become: yes
+      copy:
+        src: "{{ tmp_location }}/docker-distribution/registry"
+        dest: /usr/bin
+        mode: 0755
+        remote_src: yes
+    - name: create registry.yml
+      become: yes
+      copy:
+        dest: /etc/docker-distribution/registry/config.yml
+        content: |
+            version: 0.1
+            log:
+              fields:
+                service: registry
+            storage:
+                cache:
+                    layerinfo: inmemory
+                filesystem:
+                    rootdirectory: /var/lib/registry
+            http:
+                addr: :5000
+    - name: create docker-distribution systemd file
+      become: yes
+      copy:
+        dest: /etc/systemd/system/docker-distribution.service
+        content: |
+            [Unit]
+            Description=v2 Registry server for Docker
+            [Service]
+            Type=simple
+            ExecStart=/usr/bin/registry serve /etc/docker-distribution/registry/config.yml
+            Restart=on-failure
+            [Install]
+            WantedBy=multi-user.target
+
+    - name: extract kubernetes-server tarball
+      unarchive:
+        src: "{{ tmp_location }}/kubernetes-server-{{ version.kubernetes }}-linux-amd64.tar.gz"
+        dest: "{{ tmp_location }}"
+        remote_src: yes
+    - name: copy kube binary
+      become: yes
+      copy:
+        src: "{{ tmp_location }}/kubernetes/server/bin/{{ item }}"
+        dest: /usr/bin
+        mode: 0755
+        remote_src: yes
+      with_items:
+        - kubectl
+        - kube-apiserver
+        - kube-controller-manager
+        - kube-scheduler
+
+    - name: create csr.conf
+      copy:
+        dest: "{{ tls_location }}/csr.conf"
+        content: |
+            [ req ]
+            default_bits = 2048
+            prompt = no
+            default_md = sha256
+            req_extensions = req_ext
+            distinguished_name = dn
+            [ dn ]
+            C = IN
+            ST = KA
+            L = Bangalore
+            O = Cornet
+            OU = Ops
+            CN = master
+            [ req_ext ]
+            subjectAltName = @alt_names
+            [ alt_names ]
+            DNS.1 = master
+            DNS.2 = kubernetes
+            DNS.3 = kubernetes.default
+            DNS.4 = kubernetes.default.svc
+            DNS.5 = kubernetes.default.svc.cluster
+            DNS.6 = kubernetes.default.svc.cluster.local
+            IP.1 = {{ groups['master'][0] }}
+            IP.2 = 172.27.0.1
+            [ v3_ext ]
+            authorityKeyIdentifier=keyid,issuer:always
+            basicConstraints=CA:FALSE
+            keyUsage=keyEncipherment,dataEncipherment
+            extendedKeyUsage=serverAuth,clientAuth
+            subjectAltName=@alt_names
+
+    - name: create ca.key
+      command: openssl genrsa -out ca.key 2048
+      args:
+        chdir: "{{ tls_location }}"
+        creates: "{{ tls_location }}/ca.key"
+    - name: create ca.crt
+      command: openssl req -x509 -new -nodes -key ca.key -subj "/CN=master" -days 365 -out ca.crt
+      args:
+        chdir: "{{ tls_location }}"
+        creates: "{{ tls_location }}/ca.crt"
+    - name: create server.key
+      command: openssl genrsa -out server.key 2048
+      args:
+        chdir: "{{ tls_location }}"
+        creates: "{{ tls_location }}/server.key"
+    - name: create server.csr
+      command: openssl req -new -key server.key -out server.csr -config csr.conf
+      args:
+        chdir: "{{ tls_location }}"
+        creates: "{{ tls_location }}/server.csr"
+    - name: create server.crt
+      command: openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt -days 365 -extensions v3_ext -extfile csr.conf
+      args:
+        chdir: "{{ tls_location }}"
+        creates: "{{ tls_location }}/server.crt"
+
+    - name: copy tls files
+      become: yes
+      copy:
+        src: "{{ item }}"
+        dest: /etc/kubernetes/tls
+        remote_src: yes
+      with_items:
+        - "{{ tls_location }}/ca.crt"
+        - "{{ tls_location }}/server.crt"
+        - "{{ tls_location }}/server.key"
+
+    - name: create kubernetes config
+      become: yes
+      copy:
+        dest: /etc/kubernetes/config
+        content: |
+            KUBE_LOGTOSTDERR="--logtostderr=true"
+            KUBE_LOG_LEVEL="--v=0"
+            KUBE_ALLOW_PRIV="--allow-privileged=true"
+            KUBE_MASTER="--master=http://127.0.0.1:8080"
+    - name: create kubernetes apiserver config
+      become: yes
+      copy:
+        dest: /etc/kubernetes/apiserver
+        content: |
+            KUBE_API_ADDRESS="--insecure-bind-address=0.0.0.0"
+            KUBE_ETCD_SERVERS="--etcd-servers=http://127.0.0.1:2379"
+            KUBE_SERVICE_ADDRESSES="--service-cluster-ip-range={{ service_cluster_cidr }}"
+            KUBE_API_ARGS="--tls-cert-file=/etc/kubernetes/tls/server.crt --tls-private-key-file=/etc/kubernetes/tls/server.key"
+    - name: create kubernetes controller-manager config
+      become: yes
+      copy:
+        dest: /etc/kubernetes/controller-manager
+        content: |
+            KUBE_CONTROLLER_MANAGER_ARGS="--allocate-node-cidrs=true --service-cluster-ip-range={{ service_cluster_cidr }} --cluster-cidr={{ cluster_cidr }} --root-ca-file=/etc/kubernetes/tls/ca.crt --service-account-private-key-file=/etc/kubernetes/tls/server.key"
+
+    - name: create kube-apiserver systemd file
+      become: yes
+      copy:
+        dest: /etc/systemd/system/kube-apiserver.service
+        content: |
+            [Unit]
+            Description=Kubernetes API Server
+            Documentation=https://github.com/kubernetes/kubernetes
+            After=network.target
+            After=etcd.service
+            [Service]
+            EnvironmentFile=-/etc/kubernetes/config
+            EnvironmentFile=-/etc/kubernetes/apiserver
+            ExecStart=/usr/bin/kube-apiserver \
+                $KUBE_LOGTOSTDERR \
+                $KUBE_LOG_LEVEL \
+                $KUBE_ETCD_SERVERS \
+                $KUBE_API_ADDRESS \
+                $KUBE_ALLOW_PRIV \
+                $KUBE_SERVICE_ADDRESSES \
+                $KUBE_API_ARGS
+            Restart=on-failure
+            Type=notify
+            LimitNOFILE=65536
+            [Install]
+            WantedBy=multi-user.target
+    - name: create kube-controller-manager systemd file
+      become: yes
+      copy:
+        dest: /etc/systemd/system/kube-controller-manager.service
+        content: |
+            [Unit]
+            Description=Kubernetes Controller Manager
+            Documentation=https://github.com/kubernetes/kubernetes
+            [Service]
+            EnvironmentFile=-/etc/kubernetes/config
+            EnvironmentFile=-/etc/kubernetes/controller-manager
+            ExecStart=/usr/bin/kube-controller-manager \
+                $KUBE_LOGTOSTDERR \
+                $KUBE_LOG_LEVEL \
+                $KUBE_MASTER \
+                $KUBE_CONTROLLER_MANAGER_ARGS
+            Restart=on-failure
+            LimitNOFILE=65536
+            [Install]
+            WantedBy=multi-user.target
+    - name: create kube-scheduler systemd file
+      become: yes
+      copy:
+        dest: /etc/systemd/system/kube-scheduler.service
+        content: |
+            [Unit]
+            Description=Kubernetes Scheduler Plugin
+            Documentation=https://github.com/kubernetes/kubernetes
+            [Service]
+            EnvironmentFile=-/etc/kubernetes/config
+            ExecStart=/usr/bin/kube-scheduler \
+                $KUBE_LOGTOSTDERR \
+                $KUBE_LOG_LEVEL \
+                $KUBE_MASTER
+            Restart=on-failure
+            LimitNOFILE=65536
+            [Install]
+            WantedBy=multi-user.target
+
+    - name: reload systemd
+      become: yes
+      command: systemctl daemon-reload
+
+    - name: enable services
+      become: yes
+      service:
+        name: "{{ item }}"
+        enabled: yes
+      with_items:
+        - etcd
+        - docker-distribution
+        - kube-apiserver
+        - kube-controller-manager
+        - kube-scheduler
+
+    - name: restart services
+      become: yes
+      service:
+        name: "{{ item }}"
+        state: restarted
+      with_items:
+        - etcd
+        - docker-distribution
+        - kube-apiserver
+        - kube-controller-manager
+        - kube-scheduler

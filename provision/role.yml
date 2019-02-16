@@ -1,0 +1,28 @@
+---
+# provision iam role from localhost
+- hosts: localhost
+  vars_files:
+    - "{{ playbook_dir }}/../vars.yml"
+    - "{{ playbook_dir }}/../vars_aws.yml"
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: create iam role
+      iam_role:
+        name: "{{ instance_profile_name }}"
+        state: present
+        managed_policy:
+          - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+        assume_role_policy_document: |
+            {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Service": "ec2.amazonaws.com"
+                  },
+                  "Action": "sts:AssumeRole"
+                }
+              ]
+            }

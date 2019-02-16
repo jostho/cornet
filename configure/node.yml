@@ -1,0 +1,299 @@
+---
+# setup/configure k8s node from bastion
+- hosts: node
+  vars_files:
+    - "{{ playbook_dir }}/../vars.yml"
+  tasks:
+    - name: update /etc/hosts
+      become: yes
+      blockinfile:
+        path: /etc/hosts
+        block: |
+            {{ groups['master'][0] }}  master registry
+
+    - name: install packages
+      become: yes
+      package:
+        name:
+          - socat
+          - conntrack-tools
+          - ipset
+          - ipvsadm
+
+    - name: update .bashrc
+      blockinfile:
+        path: ~/.bashrc
+        block: |
+            alias kubectl="kubectl -s http://master:8080"
+            alias buildah="sudo buildah"
+            alias podman="sudo podman"
+            alias myipify="curl -sS -m 6 https://api.ipify.org"
+
+    - name: update .bash_profile
+      blockinfile:
+        path: ~/.bash_profile
+        block: |
+            export PS1="[\u@\h/node \W]\$ "
+
+    - name: create system dirs
+      become: yes
+      file:
+        path: "{{ item }}"
+        state: directory
+      with_items:
+        - /etc/cni
+        - /etc/cni/net.d
+        - /etc/containers
+        - /etc/crio
+        - /etc/kubernetes
+        - /opt/cni
+        - /opt/cni/bin
+        - /usr/libexec/crio
+        - /var/lib/containers
+        - /var/lib/kubelet
+
+    - name: extract atomic tarball
+      unarchive:
+        src: "{{ tmp_location }}/atomic-{{ version.atomic }}-linux-amd64.tar.gz"
+        dest: "{{ tmp_location }}"
+        remote_src: yes
+    - name: copy atomic binaries
+      become: yes
+      copy:
+        src: "{{ tmp_location }}/atomic/{{ item }}"
+        dest: /usr/bin
+        mode: 0755
+        remote_src: yes
+      with_items:
+        - runc/runc
+        - buildah/buildah
+        - libpod/podman
+        - skopeo/skopeo
+
+    - name: extract cri-o tarball
+      unarchive:
+        src: "{{ tmp_location }}/cri-o-{{ version.crio }}-linux-amd64.tar.gz"
+        dest: "{{ tmp_location }}"
+        remote_src: yes
+    - name: copy cri-o binary
+      become: yes
+      copy:
+        src: "{{ tmp_location }}/cri-o/bin/crio"
+        dest: /usr/bin
+        mode: 0755
+        remote_src: yes
+    - name: copy conmon binary
+      become: yes
+      copy:
+        src: "{{ tmp_location }}/cri-o/bin/conmon"
+        dest: /usr/libexec/crio
+        mode: 0755
+        remote_src: yes
+    - name: copy crio conf
+      become: yes
+      copy:
+        src: "{{ tmp_location }}/cri-o/{{ item }}"
+        dest: /etc/crio
+        remote_src: yes
+      with_items:
+        - crio.conf
+        - seccomp.json
+
+    - name: create crio config
+      become: yes
+      copy:
+        dest: /etc/kubernetes/crio
+        content: |
+            CRIO_ARGS="--cgroup-manager=systemd --conmon=/usr/libexec/crio/conmon --insecure-registry=registry:5000"
+
+    - name: create crio systemd file
+      become: yes
+      copy:
+        dest: /etc/systemd/system/crio.service
+        content: |
+            [Unit]
+            Description=Open Container Initiative Daemon
+            Documentation=https://github.com/kubernetes-incubator/cri-o
+            After=network-online.target
+            [Service]
+            Type=notify
+            Environment=GOTRACEBACK=crash
+            EnvironmentFile=-/etc/kubernetes/crio
+            ExecStart=/usr/bin/crio $CRIO_ARGS
+            ExecReload=/bin/kill -s HUP $MAINPID
+            TasksMax=infinity
+            LimitNOFILE=1048576
+            LimitNPROC=1048576
+            LimitCORE=infinity
+            OOMScoreAdjust=-999
+            TimeoutStartSec=0
+            Restart=on-abnormal
+            [Install]
+            WantedBy=multi-user.target
+
+    - name: create registries.conf
+      become: yes
+      copy:
+        dest: /etc/containers/registries.conf
+        content: |
+            [registries.search]
+            registries = ['docker.io']
+            [registries.insecure]
+            registries = ['registry:5000']
+
+    - name: create policy.json
+      become: yes
+      copy:
+        dest: /etc/containers/policy.json
+        content: |
+            {
+                "default": [
+                    {
+                        "type": "insecureAcceptAnything"
+                    }
+                ],
+                "transports":
+                    {
+                        "docker-daemon":
+                            {
+                                "": [{"type":"insecureAcceptAnything"}]
+                            }
+                    }
+            }
+
+    - name: extract cni tarball
+      become: yes
+      unarchive:
+        src: "{{ tmp_location }}/cni-plugins-amd64-{{ version.cni }}.tgz"
+        dest: /opt/cni/bin
+        remote_src: yes
+
+    - name: extract kubernetes-node tarball
+      unarchive:
+        src: "{{ tmp_location }}/kubernetes-node-{{ version.kubernetes }}-linux-amd64.tar.gz"
+        dest: "{{ tmp_location }}"
+        remote_src: yes
+    - name: copy kube binary
+      become: yes
+      copy:
+        src: "{{ tmp_location }}/kubernetes/node/bin/{{ item }}"
+        dest: /usr/bin
+        mode: 0755
+        remote_src: yes
+      with_items:
+        - kube-proxy
+        - kubelet
+        - kubectl
+
+    - name: create kubernetes config
+      become: yes
+      copy:
+        dest: /etc/kubernetes/config
+        content: |
+            KUBE_LOGTOSTDERR="--logtostderr=true"
+            KUBE_LOG_LEVEL="--v=0"
+            KUBE_MASTER="--master=http://master:8080"
+    - name: create kubelet config
+      become: yes
+      copy:
+        dest: /etc/kubernetes/kubelet
+        content: |
+            KUBELET_ARGS="--kubeconfig=/var/lib/kubelet/kubeconfig --cgroup-driver=systemd --container-runtime=remote --container-runtime-endpoint=unix:///var/run/crio/crio.sock --network-plugin=cni --cluster-dns=172.27.0.53 --cluster-domain=cluster.local"
+    - name: create kube-proxy config
+      become: yes
+      copy:
+        dest: /etc/kubernetes/proxy
+        content: |
+            KUBE_PROXY_ARGS="--proxy-mode=ipvs --cluster-cidr={{ cluster_cidr }} "
+    - name: create kubelet kubeconfig
+      become: yes
+      copy:
+        dest: /var/lib/kubelet/kubeconfig
+        content: |
+            apiVersion: v1
+            kind: Config
+            clusters:
+            - cluster:
+                insecure-skip-tls-verify: true
+                server: http://master:8080
+              name: master
+            contexts:
+            - context:
+                cluster: master
+                namespace: ""
+                user: ""
+              name: default
+            current-context: default
+            preferences: {}
+            users: []
+
+    - name: create kube-proxy systemd file
+      become: yes
+      copy:
+        dest: /etc/systemd/system/kube-proxy.service
+        content: |
+            [Unit]
+            Description=Kubernetes Kube-Proxy Server
+            Documentation=https://github.com/kubernetes/kubernetes
+            After=network.target
+            [Service]
+            EnvironmentFile=-/etc/kubernetes/config
+            EnvironmentFile=-/etc/kubernetes/proxy
+            ExecStart=/usr/bin/kube-proxy \
+                $KUBE_LOGTOSTDERR \
+                $KUBE_LOG_LEVEL \
+                $KUBE_MASTER \
+                $KUBE_PROXY_ARGS
+            Restart=on-failure
+            LimitNOFILE=65536
+            [Install]
+            WantedBy=multi-user.target
+
+    - name: create kubelet systemd file
+      become: yes
+      copy:
+        dest: /etc/systemd/system/kubelet.service
+        content: |
+            [Unit]
+            Description=Kubernetes Kubelet Server
+            Documentation=https://github.com/kubernetes/kubernetes
+            After=crio.service
+            Requires=crio.service
+            [Service]
+            WorkingDirectory=/var/lib/kubelet
+            EnvironmentFile=-/etc/kubernetes/config
+            EnvironmentFile=-/etc/kubernetes/kubelet
+            ExecStart=/usr/bin/kubelet \
+                $KUBE_LOGTOSTDERR \
+                $KUBE_LOG_LEVEL \
+                $KUBELET_ARGS
+            Restart=on-failure
+            KillMode=process
+            CPUAccounting=true
+            MemoryAccounting=true
+            [Install]
+            WantedBy=multi-user.target
+
+    - name: reload systemd
+      become: yes
+      command: systemctl daemon-reload
+
+    - name: enable services
+      become: yes
+      service:
+        name: "{{ item }}"
+        enabled: yes
+      with_items:
+        - crio
+        - kube-proxy
+        - kubelet
+
+    - name: restart services
+      become: yes
+      service:
+        name: "{{ item }}"
+        state: restarted
+      with_items:
+        - crio
+        - kube-proxy
+        - kubelet

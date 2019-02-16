@@ -1,0 +1,33 @@
+---
+# delete security groups from localhost
+- hosts: localhost
+  vars_files:
+    - "{{ playbook_dir }}/../vars.yml"
+    - "{{ playbook_dir }}/../vars_aws.yml"
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: purge rules from SG
+      ec2_group:
+        name: "{{ item }}"
+        description: "{{ item }}"
+        vpc_id: "{{ vpc_id }}"
+        region: "{{ region }}"
+        purge_rules: yes
+      with_items:
+        - "{{ app_name }}-cluster"
+        - "{{ app_name }}-master"
+        - "{{ app_name }}-node"
+
+    - name: delete security groups
+      ec2_group:
+        group_id: "{{ item }}"
+        vpc_id: "{{ vpc_id }}"
+        region: "{{ region }}"
+        state: absent
+      with_items:
+        - "{{ sg_id.cluster }}"
+        - "{{ sg_id.master }}"
+        - "{{ sg_id.node }}"
+        - "{{ sg_id.bastion }}"
+        - "{{ sg_id.elb }}"

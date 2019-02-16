@@ -1,0 +1,124 @@
+---
+# provision security groups from localhost
+- hosts: localhost
+  vars_files:
+    - "{{ playbook_dir }}/../vars.yml"
+    - "{{ playbook_dir }}/../vars_aws.yml"
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: create bastion SG
+      ec2_group:
+        name: "{{ app_name }}-bastion"
+        description: "{{ app_name }}-bastion"
+        vpc_id: "{{ vpc_id }}"
+        region: "{{ region }}"
+        tags:
+          Name: "{{ app_name }}-bastion"
+          Role: bastion
+          App: "{{ app_name }}"
+      register: bastion_sg
+
+    - name: update bastion SG in vars file
+      replace:
+        path: "{{ playbook_dir }}/../vars_aws.yml"
+        regexp: "bastion: sg-[0-9a-f]{17}"
+        replace: "bastion: {{ bastion_sg.group_id }}"
+
+    - name: create elb SG
+      ec2_group:
+        name: "{{ app_name }}-elb"
+        description: "{{ app_name }}-elb"
+        vpc_id: "{{ vpc_id }}"
+        region: "{{ region }}"
+        tags:
+          Name: "{{ app_name }}-elb"
+          Role: elb
+          App: "{{ app_name }}"
+      register: elb_sg
+
+    - name: update elb SG in vars file
+      replace:
+        path: "{{ playbook_dir }}/../vars_aws.yml"
+        regexp: "elb: sg-[0-9a-f]{17}"
+        replace: "elb: {{ elb_sg.group_id }}"
+
+    - name: create cluster SG
+      ec2_group:
+        name: "{{ app_name }}-cluster"
+        description: "{{ app_name }}-cluster"
+        vpc_id: "{{ vpc_id }}"
+        region: "{{ region }}"
+        tags:
+          Name: "{{ app_name }}-cluster"
+          Role: cluster
+          App: "{{ app_name }}"
+        rules:
+          - proto: all
+            group_name: "{{ app_name }}-cluster"
+          - proto: icmp
+            from_port: -1
+            to_port: -1
+            group_id: "{{ bastion_sg.group_id }}"
+          - proto: tcp
+            group_id: "{{ bastion_sg.group_id }}"
+            ports:
+              - 22
+      register: cluster_sg
+
+    - name: update cluster SG in vars file
+      replace:
+        path: "{{ playbook_dir }}/../vars_aws.yml"
+        regexp: "cluster: sg-[0-9a-f]{17}"
+        replace: "cluster: {{ cluster_sg.group_id }}"
+
+    - name: create master SG
+      ec2_group:
+        name: "{{ app_name }}-master"
+        description: "{{ app_name }}-master"
+        vpc_id: "{{ vpc_id }}"
+        region: "{{ region }}"
+        tags:
+          Name: "{{ app_name }}-master"
+          Role: master
+          App: "{{ app_name }}"
+        rules:
+          - proto: tcp
+            group_id: "{{ bastion_sg.group_id }}"
+            ports:
+              - 5000
+              - 8080
+      register: master_sg
+
+    - name: update master SG in vars file
+      replace:
+        path: "{{ playbook_dir }}/../vars_aws.yml"
+        regexp: "master: sg-[0-9a-f]{17}"
+        replace: "master: {{ master_sg.group_id }}"
+
+    - name: create node SG
+      ec2_group:
+        name: "{{ app_name }}-node"
+        description: "{{ app_name }}-node"
+        vpc_id: "{{ vpc_id }}"
+        region: "{{ region }}"
+        tags:
+          Name: "{{ app_name }}-node"
+          Role: node
+          App: "{{ app_name }}"
+        rules:
+          - proto: tcp
+            group_id: "{{ bastion_sg.group_id }}"
+            ports:
+              - 80
+          - proto: tcp
+            group_id: "{{ elb_sg.group_id }}"
+            ports:
+              - 80
+      register: node_sg
+
+    - name: update node SG in vars file
+      replace:
+        path: "{{ playbook_dir }}/../vars_aws.yml"
+        regexp: "node: sg-[0-9a-f]{17}"
+        replace: "node: {{ node_sg.group_id }}"

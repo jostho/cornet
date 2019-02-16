@@ -1,0 +1,44 @@
+---
+# this file includes all the aws variables
+# requires vars.yml
+region: us-east-2
+cidr:
+  vpc: 10.10.0.0/20
+  subnet:
+    public:
+      a: 10.10.0.0/24
+      b: 10.10.1.0/24
+    private:
+      a: 10.10.2.0/24
+      b: 10.10.3.0/24
+vpc_id: vpc-1234567890abcdef0  # ANSIBLE_MANAGED
+subnet_id:
+  bastion: subnet-1234567890abcdef0  # ANSIBLE_MANAGED
+  cluster: subnet-1234567890abcdef1  # ANSIBLE_MANAGED
+sg_id:
+  bastion: sg-1234567890abcdef0  # ANSIBLE_MANAGED
+  elb: sg-1234567890abcdef1  # ANSIBLE_MANAGED
+  cluster: sg-1234567890abcdef2  # ANSIBLE_MANAGED
+  master: sg-1234567890abcdef3  # ANSIBLE_MANAGED
+  node: sg-1234567890abcdef4  # ANSIBLE_MANAGED
+key_name: "{{ app_name }}"
+instance_profile_name: "{{ app_name }}"
+elb_name: "{{ app_name }}"
+image_id: ami-04328208f4f0cf1fe  # amzn2-ami-hvm-2.0.20190115-x86_64-gp2
+instance_type:
+  bastion: t3.large
+  cluster: t3.xlarge
+root_volume:
+  device_name: /dev/xvda
+  volume_size: 16
+  volume_type: gp2
+  delete_on_termination: true
+user_data: |
+  #!/bin/sh
+  mkdir -p {{ tmp_location }}
+  {% for package in packages %}
+  aws s3 cp --quiet {{ package }} {{ tmp_location }}
+  {% endfor %}
+  chown -R {{ default_user }} {{ tmp_location }}
+default_user: ec2-user
+bucket_name: "{{ app_name }}"

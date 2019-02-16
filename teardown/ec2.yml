@@ -1,0 +1,23 @@
+---
+# teardown instances
+- hosts: localhost
+  vars_files:
+    - "{{ playbook_dir }}/../vars.yml"
+    - "{{ playbook_dir }}/../vars_aws.yml"
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: get ec2 instances
+      ec2_instance_facts:
+        region: "{{ region }}"
+        filters:
+          "vpc-id": "{{ vpc_id }}"
+          "tag:App": "{{ app_name }}"
+      register: ec2
+
+    - name: terminate ec2 instances
+      ec2:
+        region: "{{ region }}"
+        state: absent
+        instance_ids: "{{ item.instance_id }}"
+      with_items: "{{ ec2.instances }}"

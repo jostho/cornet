@@ -1,0 +1,14 @@
+---
+# teardown elb
+- hosts: localhost
+  vars_files:
+    - "{{ playbook_dir }}/../vars.yml"
+    - "{{ playbook_dir }}/../vars_aws.yml"
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: teardown elb
+      elb_classic_lb:
+        name: "{{ elb_name }}"
+        region: "{{ region }}"
+        state: absent
