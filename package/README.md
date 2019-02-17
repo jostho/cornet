@@ -3,29 +3,29 @@ The Makefile builds/bundles requires packages and uploads them to a s3 bucket.
 
 ## Setup
 
-Provision a bastion node - which can be used as a build machine
+Provision a build node
 
-    ansible-playbook -v provision/bastion.yml
+    ansible-playbook -v provision/build.yml
 
-Copy Makefile to this node
+Configure build node from localhost
 
-    scp package/Makefile ec2-user@54.x.x.x:~/
+    ansible-playbook -v -i ./hosts configure/build.yml
 
-Ssh into bastion
+Ssh into build node
 
     ssh -A ec2-user@54.x.x.x
 
-Then configure the bastion to build
+Install golang and check
 
-    make install-dependencies && make check
+    make install-golang && make check
 
-Teardown bastion after use
+Teardown build after use
 
     ansible-playbook -v teardown/ec2.yml
 
 ## Build
 
-Ssh into bastion. Run make to see the help
+Ssh into build. Run make to see the help
 
     make
 
@@ -35,8 +35,8 @@ Bundle kubernetes
 
 Verify the artifacts
 
-    ls ~/go/dist
+    tree ~/go/dist
 
 Sync the artifacts to the s3 bucket
 
-    cd ~/go/dist/ && aws s3 sync . s3://cornet/archives/kubernetes/
+    aws s3 sync ~/go/dist/ $CORNET_BUCKET_BASE_PATH

@@ -45,16 +45,7 @@ prep:
 	mkdir -p $(GOPATH)/bin $(GOPATH)/dist $(GOPATH)/src $(GOPATH)/tmp
 
 
-# one time setup
-install-dependencies:  ## one time setup to install all dependencies to build
-install-dependencies:  install-pkgs install-golang
-
-install-pkgs:
-	$(YUM) install -y git tree gcc-c++ system-rpm-config \
-		glibc-devel glibc-static btrfs-progs-devel device-mapper-devel \
-		glib2-devel gpgme-devel libassuan-devel libseccomp-devel libgpg-error-devel \
-		pkgconfig systemd-devel
-
+# golang
 install-golang:
 	cd /tmp && $(CURL) $(CURL_FLAGS) https://dl.google.com/go/go$(VERSION_GOLANG).linux-amd64.tar.gz
 	sudo tar -C /usr/local -xzf /tmp/go$(VERSION_GOLANG).linux-amd64.tar.gz
@@ -181,8 +172,7 @@ cni:  clean prep
 
 
 # phony
-.PHONY: help check clean prep
-.PHONY: install-dependencies install-pkgs install-golang
+.PHONY: help check clean prep install-golang
 .PHONY: haproxy prep-haproxy build-haproxy dist-haproxy
 .PHONY: kubernetes kubernetes-client kubernetes-node kubernetes-server
 .PHONY: atomic prep-atomic runc buildah skopeo libpod dist-atomic

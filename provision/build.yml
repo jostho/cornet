@@ -1,0 +1,49 @@
+---
+# provision a build node from localhost
+- hosts: localhost
+  vars_files:
+    - "{{ playbook_dir }}/../vars.yml"
+    - "{{ playbook_dir }}/../vars_aws.yml"
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: create build node
+      ec2:
+        instance_type: "{{ instance_type.bastion }}"
+        image: "{{ image_id }}"
+        vpc_subnet_id: "{{ subnet_id.bastion }}"
+        region: "{{ region }}"
+        key_name: "{{ key_name }}"
+        instance_profile_name: "{{ instance_profile_name }}-build"
+        group_id:
+          - "{{ sg_id.bastion }}"
+        assign_public_ip: yes
+        termination_protection: no
+        wait: yes
+        volumes:
+          - "{{ root_volume }}"
+        instance_tags:
+          Name: "{{ app_name }}-build"
+          Role: build
+          App: "{{ app_name }}"
+      register: ec2
+
+    - name: update hosts file
+      lineinfile:
+        path: "{{ playbook_dir }}/../hosts"
+        insertafter: 'build'
+        line: "{{ item.public_ip }}  # build ANSIBLE_MANAGED"
+      with_items: "{{ ec2.instances }}"
+
+    - name: wait for ssh
+      wait_for:
+        host: "{{ item.public_ip }}"
+        port: 22
+        delay: 30
+        sleep: 10
+      with_items: "{{ ec2.instances }}"
+
+    - name: print instance details
+      debug:
+        msg: "build - {{ item.id }} / {{ item.public_ip }}"
+      with_items: "{{ ec2.instances }}"

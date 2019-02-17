@@ -1,0 +1,46 @@
+---
+# setup/configure build from localhost
+- hosts: build
+  vars_files:
+    - "{{ playbook_dir }}/../vars.yml"
+    - "{{ playbook_dir }}/../vars_aws.yml"
+  tasks:
+    - name: install packages
+      become: yes
+      package:
+        name:
+          - git
+          - tree
+          - gcc-c++
+          - system-rpm-config
+          - glibc-devel
+          - glibc-static
+          - btrfs-progs-devel
+          - device-mapper-devel
+          - glib2-devel
+          - gpgme-devel
+          - libassuan-devel
+          - libseccomp-devel
+          - libgpg-error-devel
+          - pkgconfig
+          - systemd-devel
+
+    - name: update .bashrc
+      blockinfile:
+        path: ~/.bashrc
+        block: |
+            alias myipify="curl -sS -m 6 https://api.ipify.org"
+
+    - name: update .bash_profile
+      blockinfile:
+        path: ~/.bash_profile
+        block: |
+            export PS1="[\u@build \W]\$ "
+            export CORNET_BUCKET_BASE_PATH={{ bucket_base_path }}
+
+    - name: copy Makefile
+      copy:
+        src: "{{ item }}"
+        dest: ~/
+      with_items:
+        - "{{ playbook_dir }}/../package/Makefile"
