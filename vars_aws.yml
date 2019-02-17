@@ -41,4 +41,4 @@ user_data: |
   {% endfor %}
   chown -R {{ default_user }} {{ tmp_location }}
 default_user: ec2-user
-bucket_name: "{{ app_name }}"
+bucket_base_path: s3://cornet/archives

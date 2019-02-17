@@ -6,9 +6,9 @@
     - "{{ playbook_dir }}/../vars_aws.yml"
   vars:
     packages:
-      - s3://{{ bucket_name }}/archives/kubernetes/kubernetes-client-{{ version.kubernetes }}-linux-amd64.tar.gz
-      - s3://{{ bucket_name }}/archives/atomic/atomic-{{ version.atomic }}-linux-amd64.tar.gz
-      - s3://{{ bucket_name }}/archives/haproxy/haproxy-{{ version.haproxy }}-linux-amd64.tar.gz
+      - "{{bucket_base_path}}/kubernetes/kubernetes-client-{{ version.kubernetes }}-linux-amd64.tar.gz"
+      - "{{bucket_base_path}}/atomic/atomic-{{ version.atomic }}-linux-amd64.tar.gz"
+      - "{{bucket_base_path}}/haproxy/haproxy-{{ version.haproxy }}-linux-amd64.tar.gz"
   connection: local
   gather_facts: no
   tasks:
