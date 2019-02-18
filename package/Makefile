@@ -29,6 +29,8 @@ VERSION_ATOMIC := v$(shell date +%Y%m%d)
 export GOPATH := $(HOME)/go
 export PATH := $(GOPATH)/bin:$(GOROOT)/bin:$(PATH)
 
+DIST_DIR := $(HOME)/dist
+
 help:
 	@sed -ne '/sed/!s/## //p' $(MAKEFILE_LIST)
 
@@ -41,14 +43,22 @@ check:
 clean:
 	rm -rf $(GOPATH)
 
-prep:
-	mkdir -p $(GOPATH)/bin $(GOPATH)/dist $(GOPATH)/src $(GOPATH)/tmp
+distclean:
+	rm -rf $(DIST_DIR)
 
+prep:
+	mkdir -p $(GOPATH)/{bin,src,tmp}
+	mkdir -p $(DIST_DIR)/{atomic,cni,cri-o,docker-distribution,etcd,haproxy,kubernetes}
 
 # golang
 install-golang:
 	cd /tmp && $(CURL) $(CURL_FLAGS) https://dl.google.com/go/go$(VERSION_GOLANG).linux-amd64.tar.gz
 	sudo tar -C /usr/local -xzf /tmp/go$(VERSION_GOLANG).linux-amd64.tar.gz
+
+
+# build all
+dist:  ## build all
+dist: haproxy kubernetes atomic crio registry etcd cni
 
 
 # haproxy
@@ -68,7 +78,7 @@ build-haproxy:
 
 dist-haproxy:
 	cd $(GOPATH)/tmp && tar cfz haproxy-$(VERSION_HAPROXY)-linux-amd64.tar.gz haproxy
-	cp $(GOPATH)/tmp/haproxy-$(VERSION_HAPROXY)-linux-amd64.tar.gz $(GOPATH)/dist/
+	cp $(GOPATH)/tmp/haproxy-$(VERSION_HAPROXY)-linux-amd64.tar.gz $(DIST_DIR)/haproxy/
 
 
 # kubernetes
@@ -77,21 +87,21 @@ kubernetes:  clean prep kubernetes-client kubernetes-node kubernetes-server
 
 kubernetes-client:
 	cd $(GOPATH)/tmp && $(CURL) $(CURL_FLAGS) https://dl.k8s.io/$(VERSION_KUBERNETES)/kubernetes-client-linux-amd64.tar.gz
-	cp $(GOPATH)/tmp/kubernetes-client-linux-amd64.tar.gz $(GOPATH)/dist/kubernetes-client-$(VERSION_KUBERNETES)-linux-amd64.tar.gz
+	cp $(GOPATH)/tmp/kubernetes-client-linux-amd64.tar.gz $(DIST_DIR)/kubernetes/kubernetes-client-$(VERSION_KUBERNETES)-linux-amd64.tar.gz
 
 kubernetes-node:
 	cd $(GOPATH)/tmp && $(CURL) $(CURL_FLAGS) https://dl.k8s.io/$(VERSION_KUBERNETES)/kubernetes-node-linux-amd64.tar.gz
 	cd $(GOPATH)/tmp && rm -rf kubernetes && tar xfz kubernetes-node-linux-amd64.tar.gz
 	cd $(GOPATH)/tmp/kubernetes && find -type f ! -name "kubectl" ! -name "kubelet" ! -name "kube-proxy" -delete
 	cd $(GOPATH)/tmp && tar cfz kubernetes-node-$(VERSION_KUBERNETES)-linux-amd64.tar.gz kubernetes
-	cp $(GOPATH)/tmp/kubernetes-node-$(VERSION_KUBERNETES)-linux-amd64.tar.gz $(GOPATH)/dist/
+	cp $(GOPATH)/tmp/kubernetes-node-$(VERSION_KUBERNETES)-linux-amd64.tar.gz $(DIST_DIR)/kubernetes/
 
 kubernetes-server:
 	cd $(GOPATH)/tmp && $(CURL) $(CURL_FLAGS) https://dl.k8s.io/$(VERSION_KUBERNETES)/kubernetes-server-linux-amd64.tar.gz
 	cd $(GOPATH)/tmp && rm -rf kubernetes && tar xfz kubernetes-server-linux-amd64.tar.gz
 	cd $(GOPATH)/tmp/kubernetes && find -type f ! -name "kubectl" ! -name "kube-apiserver" ! -name "kube-controller-manager" ! -name "kube-scheduler" -delete
 	cd $(GOPATH)/tmp && tar cfz kubernetes-server-$(VERSION_KUBERNETES)-linux-amd64.tar.gz kubernetes
-	cp $(GOPATH)/tmp/kubernetes-server-$(VERSION_KUBERNETES)-linux-amd64.tar.gz $(GOPATH)/dist/
+	cp $(GOPATH)/tmp/kubernetes-server-$(VERSION_KUBERNETES)-linux-amd64.tar.gz $(DIST_DIR)/kubernetes/
 
 
 # atomic
@@ -121,7 +131,7 @@ libpod:
 
 dist-atomic:
 	cd $(GOPATH)/tmp && tar cfz atomic-$(VERSION_ATOMIC)-linux-amd64.tar.gz atomic
-	cp $(GOPATH)/tmp/atomic-$(VERSION_ATOMIC)-linux-amd64.tar.gz $(GOPATH)/dist/
+	cp $(GOPATH)/tmp/atomic-$(VERSION_ATOMIC)-linux-amd64.tar.gz $(DIST_DIR)/atomic/
 
 
 # crio
@@ -140,7 +150,7 @@ build-crio:
 
 dist-crio:
 	cd $(GOPATH)/tmp && tar cfz cri-o-$(VERSION_CRIO)-linux-amd64.tar.gz cri-o
-	cp $(GOPATH)/tmp/cri-o-$(VERSION_CRIO)-linux-amd64.tar.gz $(GOPATH)/dist/
+	cp $(GOPATH)/tmp/cri-o-$(VERSION_CRIO)-linux-amd64.tar.gz $(DIST_DIR)/cri-o/
 
 
 # registry / docker-distribution
@@ -157,22 +167,23 @@ build-registry:
 
 dist-registry:
 	cd $(GOPATH)/tmp && tar cfz docker-distribution-$(VERSION_REGISTRY)-linux-amd64.tar.gz docker-distribution
-	cp $(GOPATH)/tmp/docker-distribution-$(VERSION_REGISTRY)-linux-amd64.tar.gz $(GOPATH)/dist/
+	cp $(GOPATH)/tmp/docker-distribution-$(VERSION_REGISTRY)-linux-amd64.tar.gz $(DIST_DIR)/docker-distribution/
 
 
 # etcd
 etcd:  ## bundle etcd
 etcd:  clean prep
-	cd $(GOPATH)/dist && $(CURL) $(CURL_FLAGS) https://github.com/etcd-io/etcd/releases/download/$(VERSION_ETCD)/etcd-$(VERSION_ETCD)-linux-amd64.tar.gz
+	cd $(DIST_DIR)/etcd && $(CURL) $(CURL_FLAGS) https://github.com/etcd-io/etcd/releases/download/$(VERSION_ETCD)/etcd-$(VERSION_ETCD)-linux-amd64.tar.gz
 
 # cni
 cni:  ## bundle cni
 cni:  clean prep
-	cd $(GOPATH)/dist && $(CURL) $(CURL_FLAGS) https://github.com/containernetworking/plugins/releases/download/$(VERSION_CNI)/cni-plugins-amd64-$(VERSION_CNI).tgz
+	cd $(DIST_DIR)/cni && $(CURL) $(CURL_FLAGS) https://github.com/containernetworking/plugins/releases/download/$(VERSION_CNI)/cni-plugins-amd64-$(VERSION_CNI).tgz
 
 
 # phony
-.PHONY: help check clean prep install-golang
+.PHONY: help check clean distclean prep dist
+.PHONY: install-golang
 .PHONY: haproxy prep-haproxy build-haproxy dist-haproxy
 .PHONY: kubernetes kubernetes-client kubernetes-node kubernetes-server
 .PHONY: atomic prep-atomic runc buildah skopeo libpod dist-atomic
