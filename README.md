@@ -42,6 +42,10 @@ Authorize your current IP with bastion SG (if not authorized already)
 
     ansible-playbook -v configure/sg.yml
 
+See [package README](package/README.md) to find out how to build artifacts and push to a s3 bucket
+
+## Provison the cluster
+
 Provision a bastion node
 
     ansible-playbook -v provision/bastion.yml
@@ -71,7 +75,7 @@ Teardown ec2 security groups after use
 
     ansible-playbook -v teardown/sg.yml
 
-## Build
+## Build a container image
 
 Ssh into bastion. Build ecgo container image
 
@@ -86,7 +90,7 @@ Push the image to the private registry
 
     buildah push --tls-verify=false jostho/ecgo:0.1.0 docker://registry:5000/ecgo:0.1.0
 
-## Deploy
+## Deploy the image
 
 Ssh into bastion. Verify the image in the registry
 
