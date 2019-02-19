@@ -14,4 +14,4 @@ version:
   kubernetes: v1.12.5
   crio: v1.12.5
   cni: v0.7.1
-  atomic: v20190213
+  atomic: v20190219
