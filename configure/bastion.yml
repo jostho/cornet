@@ -59,6 +59,13 @@
             retry_files_enabled = False
             callback_whitelist = profile_tasks
 
+    - name: disable journald rate limit
+      become: yes
+      blockinfile:
+        path: /etc/systemd/journald.conf
+        block: |
+            RateLimitInterval=0
+
     - name: create system dirs
       become: yes
       file:
@@ -225,5 +232,6 @@
         name: "{{ item }}"
         state: restarted
       with_items:
+        - systemd-journald
         - rsyslog
         - haproxy
