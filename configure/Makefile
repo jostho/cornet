@@ -18,6 +18,8 @@ TRAEFIK_YML := $(WORKING_DIR)/traefik/traefik-ds.yaml
 TRAEFIK_RBAC_YML := $(WORKING_DIR)/traefik/traefik-rbac.yaml
 PROMETHEUS_YML_DIR := $(WORKING_DIR)/prometheus-operator/contrib/kube-prometheus/manifests
 
+VERSION_PROMETHEUS_OPERATOR := e381c49 # v0.29.0+
+
 check:
 	$(ANSIBLE) --version | head -1
 	$(KUBECTL) version --short --client
@@ -72,7 +74,7 @@ traefik:
 	$(KUBECTL) $(KUBE_FLAGS) apply -f $(TRAEFIK_YML)
 
 prometheus:
-	cd $(WORKING_DIR) && $(GIT) clone -q https://github.com/coreos/prometheus-operator.git && cd $(WORKING_DIR)/prometheus-operator && $(GIT) checkout -q v0.28.0
+	cd $(WORKING_DIR) && $(GIT) clone -q https://github.com/coreos/prometheus-operator.git && cd $(WORKING_DIR)/prometheus-operator && $(GIT) checkout -q $(VERSION_PROMETHEUS_OPERATOR)
 	# prometheus-adapter requires extension API Server, so skip that
 	rm -f $(PROMETHEUS_YML_DIR)/prometheus-adapter-*
 	$(KUBECTL) $(KUBE_FLAGS) apply -f $(PROMETHEUS_YML_DIR)/
