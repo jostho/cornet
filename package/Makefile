@@ -19,6 +19,7 @@ VERSION_CRIO := v1.12.5
 VERSION_REGISTRY := v2.7.1
 VERSION_ETCD := v3.3.12
 VERSION_CNI := v0.7.1
+VERSION_HELM := v2.12.3
 
 VERSION_RUNC := 751f18d # v1.0.0-rc6+dev
 VERSION_BUILDAH := v1.6
@@ -48,7 +49,7 @@ distclean:
 
 prep:
 	mkdir -p $(GOPATH)/{bin,src,tmp}
-	mkdir -p $(DIST_DIR)/{atomic,cni,cri-o,docker-distribution,etcd,haproxy,kubernetes}
+	mkdir -p $(DIST_DIR)/{atomic,cni,cri-o,docker-distribution,etcd,haproxy,helm,kubernetes}
 
 # golang
 install-golang:
@@ -58,7 +59,7 @@ install-golang:
 
 # build all
 dist:  ## build all
-dist: haproxy kubernetes atomic crio registry etcd cni
+dist: haproxy kubernetes atomic crio registry etcd cni helm
 
 
 # haproxy
@@ -180,6 +181,15 @@ cni:  ## bundle cni
 cni:  clean prep
 	cd $(DIST_DIR)/cni && $(CURL) $(CURL_FLAGS) https://github.com/containernetworking/plugins/releases/download/$(VERSION_CNI)/cni-plugins-amd64-$(VERSION_CNI).tgz
 
+# helm
+helm:  ## bundle helm
+helm:  clean prep
+	cd $(GOPATH)/tmp && $(CURL) $(CURL_FLAGS) https://storage.googleapis.com/kubernetes-helm/helm-$(VERSION_HELM)-linux-amd64.tar.gz
+	cd $(GOPATH)/tmp && tar xfz helm-$(VERSION_HELM)-linux-amd64.tar.gz && mv linux-amd64 helm
+	cd $(GOPATH)/tmp/helm && find -type f ! -name "helm" -delete
+	cd $(GOPATH)/tmp && tar cfz helm-$(VERSION_HELM)-linux-amd64.tar.gz helm
+	cp $(GOPATH)/tmp/helm-$(VERSION_HELM)-linux-amd64.tar.gz $(DIST_DIR)/helm/
+
 
 # phony
 .PHONY: help check clean distclean prep dist
@@ -189,4 +199,4 @@ cni:  clean prep
 .PHONY: atomic prep-atomic runc buildah skopeo libpod dist-atomic
 .PHONY: crio prep-crio build-crio dist-crio
 .PHONY: registry prep-registry build-registry dist-registry
-.PHONY: etcd cni
+.PHONY: etcd cni helm

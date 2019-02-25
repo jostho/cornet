@@ -9,6 +9,7 @@
       - "{{bucket_base_path}}/kubernetes/kubernetes-client-{{ version.kubernetes }}-linux-amd64.tar.gz"
       - "{{bucket_base_path}}/atomic/atomic-{{ version.atomic }}-linux-amd64.tar.gz"
       - "{{bucket_base_path}}/haproxy/haproxy-{{ version.haproxy }}-linux-amd64.tar.gz"
+      - "{{bucket_base_path}}/helm/helm-{{ version.helm }}-linux-amd64.tar.gz"
   connection: local
   gather_facts: no
   tasks:

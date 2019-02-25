@@ -39,7 +39,6 @@
       blockinfile:
         path: ~/.bashrc
         block: |
-            alias kubectl="kubectl -s http://master:8080"
             alias buildah="sudo buildah"
             alias podman="sudo podman"
             alias myipify="curl -sS -m 6 https://api.ipify.org"
@@ -76,6 +75,34 @@
         - /etc/haproxy
         - /var/lib/haproxy
         - /var/log/haproxy
+
+    - name: create user dirs
+      file:
+        path: "{{ item }}"
+        state: directory
+      with_items:
+        - ~/.kube
+
+    - name: create kubeconfig
+      copy:
+        dest: ~/.kube/config
+        content: |
+            apiVersion: v1
+            kind: Config
+            clusters:
+            - cluster:
+                insecure-skip-tls-verify: true
+                server: http://master:8080
+              name: master
+            contexts:
+            - context:
+                cluster: master
+                namespace: ""
+                user: ""
+              name: default
+            current-context: default
+            preferences: {}
+            users: []
 
     - name: create registries.conf
       become: yes
@@ -191,6 +218,21 @@
         content: |
             local0.*  -/var/log/haproxy/haproxy.log
             & ~
+
+    - name: extract helm tarball
+      unarchive:
+        src: "{{ tmp_location }}/helm-{{ version.helm }}-linux-amd64.tar.gz"
+        dest: "{{ tmp_location }}"
+        remote_src: yes
+    - name: copy helm binary
+      become: yes
+      copy:
+        src: "{{ tmp_location }}/helm/{{ item }}"
+        dest: /usr/bin
+        mode: 0755
+        remote_src: yes
+      with_items:
+        - helm
 
     - name: create playbooks dir
       file:
