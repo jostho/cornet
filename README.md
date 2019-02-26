@@ -65,7 +65,7 @@ Ssh into bastion
 
 Then configure the cluster from bastion
 
-    cd ~/playbooks/configure && make cluster
+    cd ~/src/cornet/configure && make cluster
 
 Teardown ec2 instances after use
 

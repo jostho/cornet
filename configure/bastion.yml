@@ -81,6 +81,7 @@
         path: "{{ item }}"
         state: directory
       with_items:
+        - ~/src
         - ~/.kube
 
     - name: create kubeconfig
@@ -234,27 +235,12 @@
       with_items:
         - helm
 
-    - name: create playbooks dir
-      file:
-        path: "{{ item }}"
-        state: directory
+    - git:
+        repo: "https://github.com/jostho/{{ item }}.git"
+        dest: "~/src/{{ item }}"
       with_items:
-        - ~/playbooks
-        - ~/playbooks/configure
-    - name: copy vars.yml
-      copy:
-        src: "{{ item }}"
-        dest: ~/playbooks/
-      with_items:
-        - "{{ playbook_dir }}/../vars.yml"
-    - name: copy playbooks
-      copy:
-        src: "{{ item }}"
-        dest: ~/playbooks/configure
-      with_items:
-        - "{{ playbook_dir }}/master.yml"
-        - "{{ playbook_dir }}/node.yml"
-        - "{{ playbook_dir }}/Makefile"
+        - cornet
+        - kubefest
 
     - name: reload systemd
       become: yes

@@ -10,13 +10,15 @@ KUBE_FLAGS := -s http://master:8080
 CURL_FLAGS := -LO
 
 WORKING_DIR := $(HOME)/kubernetes
+SRC_DIR := $(HOME)/src
 
 FLANNEL_YML := $(WORKING_DIR)/flannel/kube-flannel.yml
 CALICO_YML := $(WORKING_DIR)/calico/calico.yaml
 DNS_YML := $(WORKING_DIR)/dns/coredns.yaml
 TRAEFIK_YML := $(WORKING_DIR)/traefik/traefik-ds.yaml
 TRAEFIK_RBAC_YML := $(WORKING_DIR)/traefik/traefik-rbac.yaml
-PROMETHEUS_YML_DIR := $(WORKING_DIR)/prometheus-operator/contrib/kube-prometheus/manifests
+
+PROMETHEUS_YML_DIR := $(SRC_DIR)/prometheus-operator/contrib/kube-prometheus/manifests
 GRAFANA_YML := $(PROMETHEUS_YML_DIR)/grafana-deployment.yaml
 
 VERSION_PROMETHEUS_OPERATOR := e381c49 # v0.29.0+
@@ -75,7 +77,7 @@ traefik:
 	$(KUBECTL) $(KUBE_FLAGS) apply -f $(TRAEFIK_YML)
 
 prometheus:
-	cd $(WORKING_DIR) && $(GIT) clone -q https://github.com/coreos/prometheus-operator.git && cd $(WORKING_DIR)/prometheus-operator && $(GIT) checkout -q $(VERSION_PROMETHEUS_OPERATOR)
+	mkdir -p $(SRC_DIR) && cd $(SRC_DIR) && $(GIT) clone -q https://github.com/coreos/prometheus-operator.git && cd $(SRC_DIR)/prometheus-operator && $(GIT) checkout -q $(VERSION_PROMETHEUS_OPERATOR)
 	# prometheus-adapter requires extension API Server, so skip that
 	rm -f $(PROMETHEUS_YML_DIR)/prometheus-adapter-*
 	# allow anonymous auth in grafana
