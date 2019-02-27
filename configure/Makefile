@@ -12,7 +12,6 @@ CURL_FLAGS := -LO
 WORKING_DIR := $(HOME)/kubernetes
 SRC_DIR := $(HOME)/src
 
-FLANNEL_YML := $(WORKING_DIR)/flannel/kube-flannel.yml
 CALICO_YML := $(WORKING_DIR)/calico/calico.yaml
 DNS_YML := $(WORKING_DIR)/dns/coredns.yaml
 TRAEFIK_YML := $(WORKING_DIR)/traefik/traefik-ds.yaml
@@ -44,14 +43,6 @@ kube-system-summary:
 	$(KUBECTL) $(KUBE_FLAGS) get nodes -o wide
 	$(KUBECTL) $(KUBE_FLAGS) -n kube-system get all -o wide
 
-# either flannel or calico can be used - calico is recommended and the default
-flannel:
-	mkdir -p $(WORKING_DIR)/flannel && cd $(WORKING_DIR)/flannel && $(CURL) $(CURL_FLAGS) https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
-	# replacement value needs to be in sync with "cluster_cidr" in vars.yml
-	sed -i.ORIG 's_10.244.0.0/16_172.17.0.0/16_g' $(FLANNEL_YML)
-	$(KUBECTL) $(KUBE_FLAGS) apply -f $(FLANNEL_YML)
-
-# either flannel or calico can be used - calico is recommended and the default
 calico:
 	mkdir -p $(WORKING_DIR)/calico && cd $(WORKING_DIR)/calico && $(CURL) $(CURL_FLAGS) https://docs.projectcalico.org/v3.5/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml
 	# replacement value needs to be in sync with "cluster_cidr" in vars.yml
@@ -90,5 +81,5 @@ prometheus:
 	$(KUBECTL) $(KUBE_FLAGS) apply -f $(PROMETHEUS_YML_DIR)/
 
 .PHONY: check clean master node cluster
-.PHONY: kube-system-summary flannel calico
+.PHONY: kube-system-summary calico
 .PHONY: dns traefik prometheus

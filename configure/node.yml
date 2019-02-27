@@ -161,13 +161,6 @@
                     }
             }
 
-    - name: extract cni tarball
-      become: yes
-      unarchive:
-        src: "{{ tmp_location }}/cni-plugins-amd64-{{ version.cni }}.tgz"
-        dest: /opt/cni/bin
-        remote_src: yes
-
     - name: extract kubernetes-node tarball
       unarchive:
         src: "{{ tmp_location }}/kubernetes-node-{{ version.kubernetes }}-linux-amd64.tar.gz"

@@ -9,7 +9,6 @@
       - "{{bucket_base_path}}/atomic/atomic-{{ version.atomic }}-linux-amd64.tar.gz"
       - "{{bucket_base_path}}/kubernetes/kubernetes-node-{{ version.kubernetes }}-linux-amd64.tar.gz"
       - "{{bucket_base_path}}/cri-o/cri-o-{{ version.crio }}-linux-amd64.tar.gz"
-      - "{{bucket_base_path}}/cni/cni-plugins-amd64-{{ version.cni }}.tgz"
   connection: local
   gather_facts: no
   tasks:

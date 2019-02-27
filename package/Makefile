@@ -18,7 +18,6 @@ VERSION_KUBERNETES := v1.12.5
 VERSION_CRIO := v1.12.5
 VERSION_REGISTRY := v2.7.1
 VERSION_ETCD := v3.3.12
-VERSION_CNI := v0.7.1
 VERSION_HELM := v2.12.3
 
 VERSION_RUNC := 751f18d # v1.0.0-rc6+dev
@@ -49,7 +48,7 @@ distclean:
 
 prep:
 	mkdir -p $(GOPATH)/{bin,src,tmp}
-	mkdir -p $(DIST_DIR)/{atomic,cni,cri-o,docker-distribution,etcd,haproxy,helm,kubernetes}
+	mkdir -p $(DIST_DIR)/{atomic,cri-o,docker-distribution,etcd,haproxy,helm,kubernetes}
 
 # golang
 install-golang:
@@ -59,7 +58,7 @@ install-golang:
 
 # build all
 dist:  ## build all
-dist: haproxy kubernetes atomic crio registry etcd cni helm
+dist: haproxy kubernetes atomic crio registry etcd helm
 
 
 # haproxy
@@ -176,10 +175,6 @@ etcd:  ## bundle etcd
 etcd:  clean prep
 	cd $(DIST_DIR)/etcd && $(CURL) $(CURL_FLAGS) https://github.com/etcd-io/etcd/releases/download/$(VERSION_ETCD)/etcd-$(VERSION_ETCD)-linux-amd64.tar.gz
 
-# cni
-cni:  ## bundle cni
-cni:  clean prep
-	cd $(DIST_DIR)/cni && $(CURL) $(CURL_FLAGS) https://github.com/containernetworking/plugins/releases/download/$(VERSION_CNI)/cni-plugins-amd64-$(VERSION_CNI).tgz
 
 # helm
 helm:  ## bundle helm
@@ -199,4 +194,4 @@ helm:  clean prep
 .PHONY: atomic prep-atomic runc buildah skopeo libpod dist-atomic
 .PHONY: crio prep-crio build-crio dist-crio
 .PHONY: registry prep-registry build-registry dist-registry
-.PHONY: etcd cni helm
+.PHONY: etcd helm
