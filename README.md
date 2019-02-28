@@ -3,6 +3,13 @@ This sets up a working kubernetes cluster on Amazon Linux 2 in AWS.
 
 This was tested with Fedora on localhost.
 
+## Cluster environment
+* etcd 3.3
+* docker-distribution 2.7
+* kubernetes 1.12
+* cri-o 1.12
+* calico 3.5
+
 ## Local environment
 * fedora 29
 * ansible 2.7
@@ -77,7 +84,7 @@ Teardown ec2 security groups after use
 
 ## Build a container image
 
-Ssh into bastion. Build ecgo container image
+Ssh into bastion. Build [ecgo](https://github.com/jostho/ecgo) container image
 
     mkdir -p ~/go/src && cd ~/go/src && git clone https://github.com/jostho/ecgo.git && cd ecgo && make image
 
