@@ -1,5 +1,18 @@
 # Package
-The Makefile builds/bundles requires packages and uploads them to a s3 bucket.
+The Makefile builds/bundles the packages and uploads them to a s3 bucket.
+
+## Overview
+The below table has information on how packages are build/bundled. See `Makefile` for details.
+
+| Package | Tier | Notes |
+| --- | --- | --- |
+| haproxy | bastion | build from sources |
+| kubernetes | bastion,master,node | bundle from a binary release |
+| atomic | bastion,node | build from sources |
+| cri-o | node | build from sources |
+| docker-distribution | master | build from sources |
+| etcd | master | bundle from a binary release |
+| helm | bastion | bundle from a binary release |
 
 ## Setup
 
