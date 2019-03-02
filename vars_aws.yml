@@ -24,7 +24,7 @@ sg_id:
 key_name: "{{ app_name }}"
 instance_profile_name: "{{ app_name }}"
 elb_name: "{{ app_name }}"
-image_id: ami-04328208f4f0cf1fe  # amzn2-ami-hvm-2.0.20190115-x86_64-gp2
+image_id: ami-0de7daa7385332688  # amzn2-ami-hvm-2.0.20190228-x86_64-gp2
 instance_type:
   bastion: t3.large
   cluster: t3.xlarge
