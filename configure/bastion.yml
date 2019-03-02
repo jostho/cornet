@@ -135,6 +135,13 @@
                     }
             }
 
+    - git:
+        repo: "https://github.com/jostho/{{ item }}.git"
+        dest: "~/src/{{ item }}"
+      with_items:
+        - cornet
+        - kubefest
+
     - name: extract kubernetes-client tarball
       unarchive:
         src: "{{ tmp_location }}/kubernetes-client-{{ version.kubernetes }}-linux-amd64.tar.gz"
@@ -234,13 +241,6 @@
         remote_src: yes
       with_items:
         - helm
-
-    - git:
-        repo: "https://github.com/jostho/{{ item }}.git"
-        dest: "~/src/{{ item }}"
-      with_items:
-        - cornet
-        - kubefest
 
     - name: reload systemd
       become: yes
