@@ -77,7 +77,7 @@ prometheus:
           - name: GF_AUTH_ANONYMOUS_ENABLED\
             value: "true"' $(GRAFANA_YML)
 	# upgrade grafana version to the latest
-	sed -i 's/6.0.0-beta1/6.0.0-beta3/g' $(GRAFANA_YML)
+	sed -i 's/6.0.0-beta1/6.0.0/g' $(GRAFANA_YML)
 	$(KUBECTL) $(KUBE_FLAGS) apply -f $(PROMETHEUS_YML_DIR)/
 
 .PHONY: check clean master node cluster
