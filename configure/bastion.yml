@@ -208,6 +208,8 @@
                 timeout connect 5s
                 timeout client  60s
                 timeout server  60s
+                compression algo gzip
+                compression type text/html text/plain text/css text/javascript application/javascript
             frontend fe-http
                 bind *:80
                 option httplog clf
