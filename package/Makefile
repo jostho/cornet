@@ -71,7 +71,7 @@ prep-haproxy:
 build-haproxy:
 	cd $(GOPATH)/src && $(CURL) $(CURL_FLAGS) http://www.haproxy.org/download/1.9/src/haproxy-$(VERSION_HAPROXY).tar.gz
 	cd $(GOPATH)/src && rm -rf haproxy-$(VERSION_HAPROXY) && tar xfz haproxy-$(VERSION_HAPROXY).tar.gz
-	cd $(GOPATH)/src/haproxy-$(VERSION_HAPROXY) && make TARGET=linux2628 USE_SYSTEMD=1
+	cd $(GOPATH)/src/haproxy-$(VERSION_HAPROXY) && make TARGET=linux2628 USE_SYSTEMD=1 USE_ZLIB=1
 	cd $(GOPATH)/src/haproxy-$(VERSION_HAPROXY)/contrib/systemd && make PREFIX=/usr
 	cp $(GOPATH)/src/haproxy-$(VERSION_HAPROXY)/haproxy $(GOPATH)/tmp/haproxy
 	cp $(GOPATH)/src/haproxy-$(VERSION_HAPROXY)/contrib/systemd/haproxy.service $(GOPATH)/tmp/haproxy
