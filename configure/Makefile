@@ -4,6 +4,7 @@ ANSIBLE := /usr/bin/ansible-playbook
 KUBECTL := /usr/bin/kubectl
 CURL := /usr/bin/curl
 GIT := /usr/bin/git
+HELM := /usr/bin/helm
 
 ANSIBLE_FLAGS := -v
 KUBE_FLAGS := -s http://master:8080
@@ -20,6 +21,8 @@ TRAEFIK_RBAC_YML := $(WORKING_DIR)/traefik/traefik-rbac.yaml
 PROMETHEUS_YML_DIR := $(SRC_DIR)/prometheus-operator/contrib/kube-prometheus/manifests
 GRAFANA_YML := $(PROMETHEUS_YML_DIR)/grafana-deployment.yaml
 
+LOKI_HELM_DIR := $(SRC_DIR)/loki/production/helm
+
 VERSION_PROMETHEUS_OPERATOR := e381c49 # v0.29.0+
 
 check:
@@ -27,6 +30,7 @@ check:
 	$(KUBECTL) version --short --client
 	$(CURL) --version | head -1
 	$(GIT) --version
+	$(HELM) version --client
 
 clean:
 	rm -f $(WORKING_DIR)/*
@@ -80,6 +84,17 @@ prometheus:
 	sed -i 's/6.0.0-beta1/6.0.0/g' $(GRAFANA_YML)
 	$(KUBECTL) $(KUBE_FLAGS) apply -f $(PROMETHEUS_YML_DIR)/
 
+helm:
+	$(HELM) init
+
+loki:
+	mkdir -p $(SRC_DIR) && cd $(SRC_DIR) && $(GIT) clone -q https://github.com/grafana/loki.git
+	# fix promtail entry_parser config
+	sed -i '/job_name:/a \
+        entry_parser: raw\' $(LOKI_HELM_DIR)/templates/promtail/configmap.yaml
+	$(HELM) install $(LOKI_HELM_DIR) --name loki --namespace logging
+
 .PHONY: check clean master node cluster
 .PHONY: kube-system-summary calico
 .PHONY: dns traefik prometheus
+.PHONY: helm loki
