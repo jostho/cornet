@@ -18,9 +18,8 @@ DNS_YML := $(WORKING_DIR)/dns/coredns.yaml
 TRAEFIK_YML := $(WORKING_DIR)/traefik/traefik-ds.yaml
 TRAEFIK_RBAC_YML := $(WORKING_DIR)/traefik/traefik-rbac.yaml
 
+KUBEFEST_DIR := $(SRC_DIR)/kubefest
 PROMETHEUS_YML_DIR := $(SRC_DIR)/prometheus-operator/contrib/kube-prometheus/manifests
-GRAFANA_YML := $(PROMETHEUS_YML_DIR)/grafana-deployment.yaml
-
 LOKI_HELM_DIR := $(SRC_DIR)/loki/production/helm
 
 VERSION_PROMETHEUS_OPERATOR := e381c49 # v0.29.0+
@@ -75,13 +74,8 @@ prometheus:
 	mkdir -p $(SRC_DIR) && cd $(SRC_DIR) && $(GIT) clone -q https://github.com/coreos/prometheus-operator.git && cd $(SRC_DIR)/prometheus-operator && $(GIT) checkout -q $(VERSION_PROMETHEUS_OPERATOR)
 	# prometheus-adapter requires extension API Server, so skip that
 	rm -f $(PROMETHEUS_YML_DIR)/prometheus-adapter-*
-	# allow anonymous auth in grafana
-	sed -i '/volumeMount/i \
-        env:\
-          - name: GF_AUTH_ANONYMOUS_ENABLED\
-            value: "true"' $(GRAFANA_YML)
-	# upgrade grafana version to the latest
-	sed -i 's/6.0.0-beta1/6.0.0/g' $(GRAFANA_YML)
+	# copy customized manifests from kubefest
+	if [ -d $(KUBEFEST_DIR)/prometheus-operator ] ; then cp $(KUBEFEST_DIR)/prometheus-operator/*.yaml $(PROMETHEUS_YML_DIR) ; fi
 	$(KUBECTL) $(KUBE_FLAGS) apply -f $(PROMETHEUS_YML_DIR)/
 
 helm:
