@@ -7,7 +7,6 @@ GIT := /usr/bin/git
 HELM := /usr/bin/helm
 
 ANSIBLE_FLAGS := -v
-KUBE_FLAGS := -s http://master:8080
 CURL_FLAGS := -LO
 
 WORKING_DIR := $(HOME)/kubernetes
@@ -43,14 +42,14 @@ node:
 	$(ANSIBLE) $(ANSIBLE_FLAGS) node.yml
 
 kube-system-summary:
-	$(KUBECTL) $(KUBE_FLAGS) get nodes -o wide
-	$(KUBECTL) $(KUBE_FLAGS) -n kube-system get all -o wide
+	$(KUBECTL) get nodes -o wide
+	$(KUBECTL) -n kube-system get all -o wide
 
 calico:
 	mkdir -p $(WORKING_DIR)/calico && cd $(WORKING_DIR)/calico && $(CURL) $(CURL_FLAGS) https://docs.projectcalico.org/v3.5/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml
 	# replacement value needs to be in sync with "cluster_cidr" in vars.yml
 	sed -i.ORIG 's_192.168.0.0/16_172.17.0.0/16_g' $(CALICO_YML)
-	$(KUBECTL) $(KUBE_FLAGS) apply -f $(CALICO_YML)
+	$(KUBECTL) apply -f $(CALICO_YML)
 
 dns:
 	mkdir -p $(WORKING_DIR)/dns && cd $(WORKING_DIR)/dns && $(CURL) $(CURL_FLAGS) https://raw.githubusercontent.com/kubernetes/kubernetes/release-1.12/cluster/addons/dns/coredns/coredns.yaml.sed
@@ -58,17 +57,17 @@ dns:
 	# replacement values needs to be in sync with "KUBELET_ARGS" in node.yml
 	sed -i 's/$$DNS_SERVER_IP/172.27.0.53/g' $(DNS_YML)
 	sed -i 's/$$DNS_DOMAIN/cluster.local/g' $(DNS_YML)
-	$(KUBECTL) $(KUBE_FLAGS) apply -f $(DNS_YML)
+	$(KUBECTL) apply -f $(DNS_YML)
 
 traefik:
 	mkdir -p $(WORKING_DIR)/traefik && cd $(WORKING_DIR)/traefik && $(CURL) $(CURL_FLAGS) "https://raw.githubusercontent.com/containous/traefik/master/examples/k8s/traefik-{rbac,ds}.yaml"
-	$(KUBECTL) $(KUBE_FLAGS) apply -f $(TRAEFIK_RBAC_YML)
+	$(KUBECTL) apply -f $(TRAEFIK_RBAC_YML)
 	# use a tag'ed image, instead of latest
 	sed -i.ORIG 's/image: traefik$$/image: traefik:v1.7/g' $(TRAEFIK_YML)
 	# enable access logging
 	sed -i '/--api/p' $(TRAEFIK_YML)
 	sed -i '0,/--api/s//--accesslog/' $(TRAEFIK_YML)
-	$(KUBECTL) $(KUBE_FLAGS) apply -f $(TRAEFIK_YML)
+	$(KUBECTL) apply -f $(TRAEFIK_YML)
 
 prometheus:
 	mkdir -p $(SRC_DIR) && cd $(SRC_DIR) && $(GIT) clone -q https://github.com/coreos/prometheus-operator.git && cd $(SRC_DIR)/prometheus-operator && $(GIT) checkout -q $(VERSION_PROMETHEUS_OPERATOR)
@@ -76,7 +75,7 @@ prometheus:
 	rm -f $(PROMETHEUS_YML_DIR)/prometheus-adapter-*
 	# copy customized manifests from kubefest
 	if [ -d $(KUBEFEST_DIR)/prometheus-operator ] ; then cp $(KUBEFEST_DIR)/prometheus-operator/*.yaml $(PROMETHEUS_YML_DIR) ; fi
-	$(KUBECTL) $(KUBE_FLAGS) apply -f $(PROMETHEUS_YML_DIR)/
+	$(KUBECTL) apply -f $(PROMETHEUS_YML_DIR)/
 
 helm:
 	$(HELM) init
