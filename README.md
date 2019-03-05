@@ -13,8 +13,8 @@ This was tested with Fedora on localhost.
 ## Local environment
 * fedora 29
 * ansible 2.7
-* python3-boto
-* python3-boto3
+* python3-boto 2.45
+* python3-boto3 1.7
 
 ## Prerequisites
 1. Access to EC2 service
@@ -86,7 +86,8 @@ Teardown ec2 security groups after use
 
 Ssh into bastion. Build [ecgo](https://github.com/jostho/ecgo) container image
 
-    mkdir -p ~/go/src && cd ~/go/src && git clone https://github.com/jostho/ecgo.git && cd ecgo && make image
+    mkdir -p ~/go/src/github.com/jostho && cd ~/go/src/github.com/jostho
+    git clone https://github.com/jostho/ecgo.git && cd ecgo && make image
 
 Verify the built image
 
