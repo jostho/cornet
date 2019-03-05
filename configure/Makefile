@@ -57,6 +57,8 @@ dns:
 	# replacement values needs to be in sync with "KUBELET_ARGS" in node.yml
 	sed -i 's/$$DNS_SERVER_IP/172.27.0.53/g' $(DNS_YML)
 	sed -i 's/$$DNS_DOMAIN/cluster.local/g' $(DNS_YML)
+	# use the latest 1.2.x image version
+	sed -i 's/coredns:1.2.2/coredns:1.2.6/g' $(DNS_YML)
 	$(KUBECTL) apply -f $(DNS_YML)
 
 traefik:
