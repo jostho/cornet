@@ -21,7 +21,7 @@ KUBEFEST_DIR := $(SRC_DIR)/kubefest
 PROMETHEUS_YML_DIR := $(SRC_DIR)/prometheus-operator/contrib/kube-prometheus/manifests
 LOKI_HELM_DIR := $(SRC_DIR)/loki/production/helm
 
-VERSION_PROMETHEUS_OPERATOR := e381c49 # v0.29.0+
+VERSION_PROMETHEUS_OPERATOR := 1f2cf36 # v0.29.0+
 
 check:
 	$(ANSIBLE) --version | head -1
