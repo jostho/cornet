@@ -22,6 +22,7 @@ PROMETHEUS_YML_DIR := $(SRC_DIR)/prometheus-operator/contrib/kube-prometheus/man
 LOKI_HELM_DIR := $(SRC_DIR)/loki/production/helm
 
 VERSION_PROMETHEUS_OPERATOR := 1f2cf36 # v0.29.0+
+VERSION_LOKI := 067c5af # master
 
 check:
 	$(ANSIBLE) --version | head -1
@@ -83,10 +84,9 @@ helm:
 	$(HELM) init
 
 loki:
-	mkdir -p $(SRC_DIR) && cd $(SRC_DIR) && $(GIT) clone -q https://github.com/grafana/loki.git
-	# fix promtail entry_parser config
-	sed -i '/job_name:/a \
-        entry_parser: raw\' $(LOKI_HELM_DIR)/templates/promtail/configmap.yaml
+	mkdir -p $(SRC_DIR) && cd $(SRC_DIR) && $(GIT) clone -q https://github.com/grafana/loki.git && cd $(SRC_DIR)/loki && $(GIT) checkout -q $(VERSION_LOKI)
+	# change promtail entry parser config
+	sed -i 's/entryParser: docker/entryParser: raw/g' $(LOKI_HELM_DIR)/values.yaml
 	$(HELM) install $(LOKI_HELM_DIR) --name loki --namespace logging
 
 .PHONY: check clean master node cluster
