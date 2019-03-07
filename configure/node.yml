@@ -65,10 +65,10 @@
         mode: 0755
         remote_src: yes
       with_items:
-        - runc/runc
-        - buildah/buildah
-        - libpod/podman
-        - skopeo/skopeo
+        - runc
+        - buildah
+        - podman
+        - skopeo
 
     - name: extract cri-o tarball
       unarchive:

@@ -168,10 +168,10 @@
         mode: 0755
         remote_src: yes
       with_items:
-        - runc/runc
-        - buildah/buildah
-        - libpod/podman
-        - skopeo/skopeo
+        - runc
+        - buildah
+        - podman
+        - skopeo
 
     - name: extract haproxy tarball
       unarchive:

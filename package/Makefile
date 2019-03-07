@@ -20,10 +20,10 @@ VERSION_REGISTRY := v2.7.1
 VERSION_ETCD := v3.3.12
 VERSION_HELM := v2.12.3
 
-VERSION_RUNC := 751f18d # v1.0.0-rc6+dev
+VERSION_RUNC := 923a8f8 # v1.0.0-rc6+dev
 VERSION_BUILDAH := v1.7.1
-VERSION_SKOPEO := v0.1.34
-VERSION_LIBPOD := v1.1.0
+VERSION_SKOPEO := v0.1.35
+VERSION_LIBPOD := v1.1.2
 VERSION_ATOMIC := v$(shell date +%Y%m%d)
 
 export GOPATH := $(HOME)/go
@@ -115,19 +115,19 @@ prep-atomic:
 
 runc:
 	cd $(GOPATH)/src/github.com/opencontainers && $(GIT) clone -q https://github.com/opencontainers/runc && cd runc && $(GIT) checkout -q $(VERSION_RUNC) && make runc
-	mkdir -p $(GOPATH)/tmp/atomic/runc &&  cp $(GOPATH)/src/github.com/opencontainers/runc/runc  $(GOPATH)/tmp/atomic/runc/
+	cp $(GOPATH)/src/github.com/opencontainers/runc/runc  $(GOPATH)/tmp/atomic/
 
 buildah:
 	cd $(GOPATH)/src/github.com/containers && $(GIT) clone -q https://github.com/containers/buildah && cd buildah && $(GIT) checkout -q $(VERSION_BUILDAH) && make buildah
-	mkdir -p $(GOPATH)/tmp/atomic/buildah && cp $(GOPATH)/src/github.com/containers/buildah/buildah  $(GOPATH)/tmp/atomic/buildah
+	cp $(GOPATH)/src/github.com/containers/buildah/buildah  $(GOPATH)/tmp/atomic/
 
 skopeo:
 	cd $(GOPATH)/src/github.com/containers && $(GIT) clone -q https://github.com/containers/skopeo && cd skopeo && $(GIT) checkout -q $(VERSION_SKOPEO) && make binary-local BUILDTAGS=containers_image_ostree_stub
-	mkdir -p $(GOPATH)/tmp/atomic/skopeo && cp $(GOPATH)/src/github.com/containers/skopeo/skopeo  $(GOPATH)/tmp/atomic/skopeo
+	cp $(GOPATH)/src/github.com/containers/skopeo/skopeo  $(GOPATH)/tmp/atomic/
 
 libpod:
 	cd $(GOPATH)/src/github.com/containers && $(GIT) clone -q https://github.com/containers/libpod && cd libpod && $(GIT) checkout -q $(VERSION_LIBPOD) && make install.tools && make binaries
-	mkdir -p $(GOPATH)/tmp/atomic/libpod && cp $(GOPATH)/src/github.com/containers/libpod/bin/podman  $(GOPATH)/tmp/atomic/libpod
+	cp $(GOPATH)/src/github.com/containers/libpod/bin/podman  $(GOPATH)/tmp/atomic/
 
 dist-atomic:
 	cd $(GOPATH)/tmp && tar cfz atomic-$(VERSION_ATOMIC)-linux-amd64.tar.gz atomic
