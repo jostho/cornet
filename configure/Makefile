@@ -91,9 +91,8 @@ prometheus:
 
 loki:
 	mkdir -p $(SRC_DIR) && cd $(SRC_DIR) && $(GIT) clone -q https://github.com/grafana/loki.git && cd $(SRC_DIR)/loki && $(GIT) checkout -q $(VERSION_LOKI)
-	# change promtail entry parser config
-	sed -i 's/entryParser: docker/entryParser: raw/g' $(LOKI_HELM_DIR)/values.yaml
-	$(HELM) install $(LOKI_HELM_DIR) --name loki --namespace logging
+	# set promtail entry parser
+	$(HELM) install $(LOKI_HELM_DIR) --name loki --namespace logging --set promtail.entryParser=raw
 
 .PHONY: check clean master node
 .PHONY: cluster kube-system-summary
