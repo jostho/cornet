@@ -191,7 +191,7 @@
       copy:
         dest: /etc/kubernetes/kubelet
         content: |
-            KUBELET_ARGS="--kubeconfig=/var/lib/kubelet/kubeconfig --cgroup-driver=systemd --container-runtime=remote --container-runtime-endpoint=unix:///var/run/crio/crio.sock --network-plugin=cni --cluster-dns=172.27.0.53 --cluster-domain=cluster.local"
+            KUBELET_ARGS="--kubeconfig=/var/lib/kubelet/kubeconfig --cgroup-driver=systemd --container-runtime=remote --container-runtime-endpoint=unix:///var/run/crio/crio.sock --network-plugin=cni --cluster-dns=172.27.0.53 --cluster-domain=cluster.local --node-labels=cornet-role=node"
     - name: create kube-proxy config
       become: yes
       copy:

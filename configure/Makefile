@@ -34,7 +34,7 @@ check:
 clean:
 	rm -f $(WORKING_DIR)/*
 
-cluster:  master node calico
+cluster:  master node calico helm dns
 
 master:
 	$(ANSIBLE) $(ANSIBLE_FLAGS) master.yml
@@ -51,6 +51,13 @@ calico:
 	# replacement value needs to be in sync with "cluster_cidr" in vars.yml
 	sed -i.ORIG 's_192.168.0.0/16_172.17.0.0/16_g' $(CALICO_YML)
 	$(KUBECTL) apply -f $(CALICO_YML)
+	$(KUBECTL) -n kube-system wait nodes --for=condition=Ready --timeout=60s -l cornet-role=node
+	$(KUBECTL) -n kube-system wait pods  --for=condition=Ready --timeout=60s -l k8s-app=calico-node
+
+helm:
+	$(HELM) init
+	$(KUBECTL) -n kube-system wait deploy --for=condition=Available --timeout=30s -l app=helm,name=tiller
+	$(KUBECTL) -n kube-system wait pods --for=condition=Ready --timeout=30s -l app=helm,name=tiller
 
 dns:
 	mkdir -p $(WORKING_DIR)/dns && cd $(WORKING_DIR)/dns && $(CURL) $(CURL_FLAGS) https://raw.githubusercontent.com/kubernetes/kubernetes/release-1.12/cluster/addons/dns/coredns/coredns.yaml.sed
@@ -61,6 +68,8 @@ dns:
 	# use the latest 1.2.x image version
 	sed -i 's/coredns:1.2.2/coredns:1.2.6/g' $(DNS_YML)
 	$(KUBECTL) apply -f $(DNS_YML)
+	$(KUBECTL) -n kube-system wait deploy --for=condition=Available --timeout=30s -l k8s-app=kube-dns
+	$(KUBECTL) -n kube-system wait pods --for=condition=Ready --timeout=30s -l k8s-app=kube-dns
 
 traefik:
 	mkdir -p $(WORKING_DIR)/traefik && cd $(WORKING_DIR)/traefik && $(CURL) $(CURL_FLAGS) "https://raw.githubusercontent.com/containous/traefik/master/examples/k8s/traefik-{rbac,ds}.yaml"
@@ -80,16 +89,13 @@ prometheus:
 	if [ -d $(KUBEFEST_DIR)/prometheus-operator ] ; then cp $(KUBEFEST_DIR)/prometheus-operator/*.yaml $(PROMETHEUS_YML_DIR) ; fi
 	$(KUBECTL) apply -f $(PROMETHEUS_YML_DIR)/
 
-helm:
-	$(HELM) init
-
 loki:
 	mkdir -p $(SRC_DIR) && cd $(SRC_DIR) && $(GIT) clone -q https://github.com/grafana/loki.git && cd $(SRC_DIR)/loki && $(GIT) checkout -q $(VERSION_LOKI)
 	# change promtail entry parser config
 	sed -i 's/entryParser: docker/entryParser: raw/g' $(LOKI_HELM_DIR)/values.yaml
 	$(HELM) install $(LOKI_HELM_DIR) --name loki --namespace logging
 
-.PHONY: check clean master node cluster
-.PHONY: kube-system-summary calico
-.PHONY: dns traefik prometheus
-.PHONY: helm loki
+.PHONY: check clean master node
+.PHONY: cluster kube-system-summary
+.PHONY: calico helm dns
+.PHONY: traefik prometheus loki
