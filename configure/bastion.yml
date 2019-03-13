@@ -142,6 +142,23 @@
         - cornet
         - kubefest
 
+    - name: copy vars.yml from local
+      copy:
+        src: "{{ item }}"
+        dest: ~/src/cornet
+      when: mode is defined and mode == "dev"
+      with_items:
+        - "{{ playbook_dir }}/../vars.yml"
+    - name: copy playbooks from local
+      copy:
+        src: "{{ item }}"
+        dest: ~/src/cornet/configure
+      when: mode is defined and mode == "dev"
+      with_items:
+        - "{{ playbook_dir }}/master.yml"
+        - "{{ playbook_dir }}/node.yml"
+        - "{{ playbook_dir }}/Makefile"
+
     - name: extract kubernetes-client tarball
       unarchive:
         src: "{{ tmp_location }}/kubernetes-client-{{ version.kubernetes }}-linux-amd64.tar.gz"
