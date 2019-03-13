@@ -4,11 +4,11 @@ This sets up a working kubernetes cluster on Amazon Linux 2 in AWS.
 This was tested with Fedora on localhost.
 
 ## Cluster environment
-* etcd 3.3
-* docker-distribution 2.7
-* kubernetes 1.12
-* cri-o 1.12
-* calico 3.5
+* [etcd](https://github.com/etcd-io/etcd) 3.3
+* [docker-distribution](https://github.com/docker/distribution) 2.7
+* [kubernetes](https://github.com/kubernetes/kubernetes) 1.12
+* [cri-o](https://github.com/kubernetes-sigs/cri-o) 1.12
+* [calico](https://github.com/projectcalico/calico) 3.5
 
 ## Local environment
 * fedora 29
