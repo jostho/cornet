@@ -83,24 +83,30 @@ dist-haproxy:
 
 # kubernetes
 kubernetes:  ## bundle kubernetes
-kubernetes:  clean prep kubernetes-client kubernetes-node kubernetes-server
+kubernetes:  clean prep prep-kubernetes kubernetes-client kubernetes-node kubernetes-server
+
+prep-kubernetes:
+	mkdir -p $(GOPATH)/tmp/kubernetes-{client,node,server}
 
 kubernetes-client:
 	cd $(GOPATH)/tmp && $(CURL) $(CURL_FLAGS) https://dl.k8s.io/$(VERSION_KUBERNETES)/kubernetes-client-linux-amd64.tar.gz
-	cp $(GOPATH)/tmp/kubernetes-client-linux-amd64.tar.gz $(DIST_DIR)/kubernetes/kubernetes-client-$(VERSION_KUBERNETES)-linux-amd64.tar.gz
+	cd $(GOPATH)/tmp && rm -rf kubernetes && tar xfz kubernetes-client-linux-amd64.tar.gz
+	cp $(GOPATH)/tmp/kubernetes/client/bin/kubectl $(GOPATH)/tmp/kubernetes-client
+	cd $(GOPATH)/tmp && tar cfz kubernetes-client-$(VERSION_KUBERNETES)-linux-amd64.tar.gz kubernetes-client
+	cp $(GOPATH)/tmp/kubernetes-client-$(VERSION_KUBERNETES)-linux-amd64.tar.gz $(DIST_DIR)/kubernetes/
 
 kubernetes-node:
 	cd $(GOPATH)/tmp && $(CURL) $(CURL_FLAGS) https://dl.k8s.io/$(VERSION_KUBERNETES)/kubernetes-node-linux-amd64.tar.gz
 	cd $(GOPATH)/tmp && rm -rf kubernetes && tar xfz kubernetes-node-linux-amd64.tar.gz
-	cd $(GOPATH)/tmp/kubernetes && find -type f ! -name "kubectl" ! -name "kubelet" ! -name "kube-proxy" -delete
-	cd $(GOPATH)/tmp && tar cfz kubernetes-node-$(VERSION_KUBERNETES)-linux-amd64.tar.gz kubernetes
+	cp $(GOPATH)/tmp/kubernetes/node/bin/{kubectl,kubelet,kube-proxy} $(GOPATH)/tmp/kubernetes-node
+	cd $(GOPATH)/tmp && tar cfz kubernetes-node-$(VERSION_KUBERNETES)-linux-amd64.tar.gz kubernetes-node
 	cp $(GOPATH)/tmp/kubernetes-node-$(VERSION_KUBERNETES)-linux-amd64.tar.gz $(DIST_DIR)/kubernetes/
 
 kubernetes-server:
 	cd $(GOPATH)/tmp && $(CURL) $(CURL_FLAGS) https://dl.k8s.io/$(VERSION_KUBERNETES)/kubernetes-server-linux-amd64.tar.gz
 	cd $(GOPATH)/tmp && rm -rf kubernetes && tar xfz kubernetes-server-linux-amd64.tar.gz
-	cd $(GOPATH)/tmp/kubernetes && find -type f ! -name "kubectl" ! -name "kube-apiserver" ! -name "kube-controller-manager" ! -name "kube-scheduler" -delete
-	cd $(GOPATH)/tmp && tar cfz kubernetes-server-$(VERSION_KUBERNETES)-linux-amd64.tar.gz kubernetes
+	cp $(GOPATH)/tmp/kubernetes/server/bin/{kubectl,kube-apiserver,kube-controller-manager,kube-scheduler} $(GOPATH)/tmp/kubernetes-server
+	cd $(GOPATH)/tmp && tar cfz kubernetes-server-$(VERSION_KUBERNETES)-linux-amd64.tar.gz kubernetes-server
 	cp $(GOPATH)/tmp/kubernetes-server-$(VERSION_KUBERNETES)-linux-amd64.tar.gz $(DIST_DIR)/kubernetes/
 
 
@@ -190,7 +196,7 @@ helm:  clean prep
 .PHONY: help check clean distclean prep dist
 .PHONY: install-golang
 .PHONY: haproxy prep-haproxy build-haproxy dist-haproxy
-.PHONY: kubernetes kubernetes-client kubernetes-node kubernetes-server
+.PHONY: kubernetes prep-kubernetes kubernetes-client kubernetes-node kubernetes-server
 .PHONY: atomic prep-atomic runc buildah skopeo libpod dist-atomic
 .PHONY: crio prep-crio build-crio dist-crio
 .PHONY: registry prep-registry build-registry dist-registry

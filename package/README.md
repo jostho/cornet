@@ -6,13 +6,15 @@ The below table has information on how packages are build/bundled. See `Makefile
 
 | Package | Tier | Notes |
 | --- | --- | --- |
-| haproxy | bastion | build from sources |
-| kubernetes | bastion,master,node | bundle from a binary release |
 | atomic | bastion,node | build from sources |
 | cri-o | node | build from sources |
 | docker-distribution | master | build from sources |
 | etcd | master | bundle from a binary release |
+| haproxy | bastion | build from sources |
 | helm | bastion | bundle from a binary release |
+| kubernetes-client | bastion | bundle from a binary release |
+| kubernetes-node | node | bundle from a binary release |
+| kubernetes-server | master | bundle from a binary release |
 
 ## Setup
 

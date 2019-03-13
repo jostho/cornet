@@ -150,7 +150,7 @@
     - name: copy kubectl binary
       become: yes
       copy:
-        src: "{{ tmp_location }}/kubernetes/client/bin/kubectl"
+        src: "{{ tmp_location }}/kubernetes-client/kubectl"
         dest: /usr/bin
         mode: 0755
         remote_src: yes
