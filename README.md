@@ -9,6 +9,15 @@ This was tested with Fedora on localhost.
 * [kubernetes](https://github.com/kubernetes/kubernetes) 1.12
 * [cri-o](https://github.com/kubernetes-sigs/cri-o) 1.12
 * [calico](https://github.com/projectcalico/calico) 3.5
+* [helm](https://github.com/helm/helm) 2.12
+* [coredns](https://github.com/coredns/coredns) 1.2
+
+## AWS resources
+
+1. VPC with subnets
+2. EC2 instances & security groups
+3. S3 bucket
+4. IAM role
 
 ## Local environment
 * fedora 29
