@@ -13,11 +13,10 @@ This was tested with Fedora on localhost.
 * [coredns](https://github.com/coredns/coredns) 1.2
 
 ## AWS resources
-
-1. VPC with subnets
-2. EC2 instances & security groups
-3. S3 bucket
-4. IAM role
+* VPC with subnets
+* EC2 instances & security groups
+* S3 bucket
+* IAM roles
 
 ## Local environment
 * fedora 29
@@ -44,9 +43,9 @@ Create a `~/.ansible.cfg` config file, with the below contents
     retry_files_enabled = False
     callback_whitelist = profile_tasks
 
-Import your keypair using aws console or the cli
+Import your keypair using aws console or the cli. Update `key_name` in `vars_aws.yml` to use that keypair
 
-Create IAM role (if not created already)
+Create IAM roles (if not created already)
 
     ansible-playbook -v provision/role.yml
 
@@ -54,13 +53,13 @@ Create ec2 security groups for the bastion and kubernetes cluster (if not create
 
     ansible-playbook -v provision/sg.yml
 
-Authorize your current IP with bastion SG (if not authorized already)
+Authorize your current IP with bastion security group (if not authorized already)
 
     ansible-playbook -v configure/sg.yml
 
 See [package README](package/README.md) to find out how to build artifacts and push to a s3 bucket
 
-## Provison the cluster
+## Provision the cluster
 
 Provision a bastion node
 
