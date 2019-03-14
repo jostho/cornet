@@ -25,24 +25,6 @@
         regexp: "bastion: sg-[0-9a-f]{17}"
         replace: "bastion: {{ bastion_sg.group_id }}"
 
-    - name: create elb SG
-      ec2_group:
-        name: "{{ app_name }}-elb"
-        description: "{{ app_name }}-elb"
-        vpc_id: "{{ vpc_id }}"
-        region: "{{ region }}"
-        tags:
-          Name: "{{ app_name }}-elb"
-          Role: elb
-          App: "{{ app_name }}"
-      register: elb_sg
-
-    - name: update elb SG in vars file
-      replace:
-        path: "{{ playbook_dir }}/../vars_aws.yml"
-        regexp: "elb: sg-[0-9a-f]{17}"
-        replace: "elb: {{ elb_sg.group_id }}"
-
     - name: create cluster SG
       ec2_group:
         name: "{{ app_name }}-cluster"
@@ -109,10 +91,6 @@
         rules:
           - proto: tcp
             group_id: "{{ bastion_sg.group_id }}"
-            ports:
-              - 80
-          - proto: tcp
-            group_id: "{{ elb_sg.group_id }}"
             ports:
               - 80
       register: node_sg

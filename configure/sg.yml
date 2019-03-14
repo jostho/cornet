@@ -25,15 +25,3 @@
             from_port: 80
             to_port: 80
             cidr_ip: "{{ ipify_public_ip }}/32"
-
-    - name: update elb SG
-      ec2_group:
-        name: "{{ app_name }}-elb"
-        description: "{{ app_name }}-elb"
-        vpc_id: "{{ vpc_id }}"
-        region: "{{ region }}"
-        rules:
-          - proto: tcp
-            from_port: 80
-            to_port: 80
-            cidr_ip: "{{ ipify_public_ip }}/32"

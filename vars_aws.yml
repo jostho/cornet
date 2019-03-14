@@ -17,13 +17,11 @@ subnet_id:
   cluster: subnet-1234567890abcdef1  # ANSIBLE_MANAGED
 sg_id:
   bastion: sg-1234567890abcdef0  # ANSIBLE_MANAGED
-  elb: sg-1234567890abcdef1  # ANSIBLE_MANAGED
-  cluster: sg-1234567890abcdef2  # ANSIBLE_MANAGED
-  master: sg-1234567890abcdef3  # ANSIBLE_MANAGED
-  node: sg-1234567890abcdef4  # ANSIBLE_MANAGED
+  cluster: sg-1234567890abcdef1  # ANSIBLE_MANAGED
+  master: sg-1234567890abcdef2  # ANSIBLE_MANAGED
+  node: sg-1234567890abcdef3  # ANSIBLE_MANAGED
 key_name: "{{ app_name }}"
 instance_profile_name: "{{ app_name }}"
-elb_name: "{{ app_name }}"
 image_id: ami-0de7daa7385332688  # amzn2-ami-hvm-2.0.20190228-x86_64-gp2
 instance_type:
   bastion: t3.large

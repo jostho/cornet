@@ -30,4 +30,3 @@
         - "{{ sg_id.master }}"
         - "{{ sg_id.node }}"
         - "{{ sg_id.bastion }}"
-        - "{{ sg_id.elb }}"
