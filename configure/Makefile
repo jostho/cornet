@@ -72,7 +72,7 @@ dns:
 	$(KUBECTL) -n kube-system wait pods --for=condition=Ready --timeout=30s -l k8s-app=kube-dns
 
 traefik:
-	mkdir -p $(WORKING_DIR)/traefik && cd $(WORKING_DIR)/traefik && $(CURL) $(CURL_FLAGS) "https://raw.githubusercontent.com/containous/traefik/master/examples/k8s/traefik-{rbac,ds}.yaml"
+	mkdir -p $(WORKING_DIR)/traefik && cd $(WORKING_DIR)/traefik && $(CURL) $(CURL_FLAGS) "https://raw.githubusercontent.com/containous/traefik/v1.7/examples/k8s/traefik-{rbac,ds}.yaml"
 	$(KUBECTL) apply -f $(TRAEFIK_RBAC_YML)
 	# use a tag'ed image, instead of latest
 	sed -i.ORIG 's/image: traefik$$/image: traefik:v1.7/g' $(TRAEFIK_YML)
