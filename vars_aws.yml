@@ -22,7 +22,7 @@ sg_id:
   node: sg-1234567890abcdef3  # ANSIBLE_MANAGED
 key_name: "{{ app_name }}"
 instance_profile_name: "{{ app_name }}"
-image_id: ami-0de7daa7385332688  # amzn2-ami-hvm-2.0.20190228-x86_64-gp2
+image_id: ami-02bcbb802e03574ba  # amzn2-ami-hvm-2.0.20190313-x86_64-gp2
 instance_type:
   bastion: t3.large
   cluster: t3.xlarge
