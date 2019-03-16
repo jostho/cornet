@@ -17,11 +17,12 @@
         vpc_id: "{{ vpc_id }}"
         region: "{{ region }}"
         rules:
-          - proto: tcp
-            from_port: 22
-            to_port: 22
+          - proto: icmp
+            from_port: -1
+            to_port: -1
             cidr_ip: "{{ ipify_public_ip }}/32"
           - proto: tcp
-            from_port: 80
-            to_port: 80
             cidr_ip: "{{ ipify_public_ip }}/32"
+            ports:
+              - 22
+              - 80
