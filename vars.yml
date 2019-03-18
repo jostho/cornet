@@ -12,6 +12,6 @@ version:
   etcd: v3.3.12
   registry: v2.7.1
   kubernetes: v1.12.6
-  crio: v1.12.6
+  crio: v1.12.9
   helm: v2.12.3
   atomic: v20190307
