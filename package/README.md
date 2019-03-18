@@ -20,7 +20,7 @@ The below table has information on how packages are build/bundled. See `Makefile
 
 ## Setup
 
-A S3 bucket is required to hold the build artifacts. If you have an existing bucket, update `bucket_base_path` in `vars_aws.yml` to specify the path.
+A bucket is required to hold the build artifacts. If you have an existing s3 bucket, update `bucket_base_path` in `vars_aws.yml` to specify the path. The total size of all the artifacts comes to ~ 250 MB.
 
 ## Provision
 
