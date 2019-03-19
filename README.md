@@ -42,6 +42,8 @@ Create a `~/.ansible.cfg` config file, with the below contents
     host_key_checking = False
     retry_files_enabled = False
     callback_whitelist = profile_tasks
+    [ssh_connection]
+    pipelining = True
 
 Import your keypair using aws console or the cli. Update `key_name` in `vars_aws.yml` to use that keypair
 
