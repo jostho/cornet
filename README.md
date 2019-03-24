@@ -96,27 +96,26 @@ Teardown ec2 security groups after use
 
 Ssh into bastion. Build [ecgo](https://github.com/jostho/ecgo) container image
 
-    mkdir -p ~/go/src/github.com/jostho && cd ~/go/src/github.com/jostho
-    git clone https://github.com/jostho/ecgo.git && cd ecgo && make image
+    cd ~/src && git clone https://github.com/jostho/ecgo.git && cd ecgo && make image
 
 Verify the built image
 
     buildah images
-    buildah inspect jostho/ecgo:0.1.0
+    buildah inspect jostho/ecgo:v0.2.0
 
 Push the image to the private registry
 
-    buildah push --tls-verify=false jostho/ecgo:0.1.0 docker://registry:5000/ecgo:0.1.0
+    buildah push --tls-verify=false jostho/ecgo:v0.2.0 docker://registry:5000/ecgo:v0.2.0
 
 ## Deploy the image
 
 Ssh into bastion. Verify the image in the registry
 
-    skopeo inspect --tls-verify=false docker://registry:5000/ecgo:0.1.0
+    skopeo inspect --tls-verify=false docker://registry:5000/ecgo:v0.2.0
 
 Create a pod
 
-    kubectl run ecgo --image=registry:5000/ecgo:0.1.0 --port=8000 --restart=Never
+    kubectl run ecgo --image=registry:5000/ecgo:v0.2.0 --port=8000 --restart=Never
 
 Verify the pod
 
