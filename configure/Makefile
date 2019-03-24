@@ -22,7 +22,7 @@ PROMETHEUS_YML_DIR := $(SRC_DIR)/prometheus-operator/contrib/kube-prometheus/man
 LOKI_HELM_DIR := $(SRC_DIR)/loki/production/helm
 
 VERSION_PROMETHEUS_OPERATOR := 1f2cf36 # v0.29.0+
-VERSION_LOKI := 067c5af # master
+VERSION_LOKI := d495c68 # master
 
 check:
 	$(ANSIBLE) --version | head -1
