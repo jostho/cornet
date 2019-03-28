@@ -22,7 +22,7 @@ PROMETHEUS_YML_DIR := $(SRC_DIR)/prometheus-operator/contrib/kube-prometheus/man
 LOKI_HELM_DIR := $(SRC_DIR)/loki/production/helm
 
 VERSION_PROMETHEUS_OPERATOR := 1f2cf36 # v0.29.0+
-VERSION_LOKI := d495c68 # master
+VERSION_LOKI := adc42cc # master
 
 check:
 	$(ANSIBLE) --version | head -1
@@ -92,7 +92,7 @@ prometheus:
 loki:
 	mkdir -p $(SRC_DIR) && cd $(SRC_DIR) && $(GIT) clone -q https://github.com/grafana/loki.git && cd $(SRC_DIR)/loki && $(GIT) checkout -q $(VERSION_LOKI)
 	# set promtail entry parser
-	$(HELM) install $(LOKI_HELM_DIR) --name loki --namespace logging --set promtail.entryParser=raw
+	$(HELM) install $(LOKI_HELM_DIR) --name loki --namespace monitoring --set loki.image.tag=master-$(VERSION_LOKI) --set promtail.image.tag=master-$(VERSION_LOKI) --set promtail.entryParser=raw
 
 .PHONY: check clean master node
 .PHONY: cluster kube-system-summary
