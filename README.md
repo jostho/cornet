@@ -6,11 +6,11 @@ This was tested with Fedora on localhost.
 ## Cluster environment
 * [etcd](https://github.com/etcd-io/etcd) 3.3
 * [docker-distribution](https://github.com/docker/distribution) 2.7
-* [kubernetes](https://github.com/kubernetes/kubernetes) 1.12
-* [cri-o](https://github.com/kubernetes-sigs/cri-o) 1.12
-* [calico](https://github.com/projectcalico/calico) 3.5
-* [helm](https://github.com/helm/helm) 2.12
-* [coredns](https://github.com/coredns/coredns) 1.2
+* [kubernetes](https://github.com/kubernetes/kubernetes) 1.13
+* [cri-o](https://github.com/kubernetes-sigs/cri-o) 1.13
+* [calico](https://github.com/projectcalico/calico) 3.6
+* [helm](https://github.com/helm/helm) 2.13
+* [coredns](https://github.com/coredns/coredns) 1.3
 
 ## AWS resources
 * VPC with subnets

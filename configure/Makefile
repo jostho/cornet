@@ -47,7 +47,7 @@ kube-system-summary:
 	$(KUBECTL) -n kube-system get all -o wide
 
 calico:
-	mkdir -p $(WORKING_DIR)/calico && cd $(WORKING_DIR)/calico && $(CURL) $(CURL_FLAGS) https://docs.projectcalico.org/v3.5/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml
+	mkdir -p $(WORKING_DIR)/calico && cd $(WORKING_DIR)/calico && $(CURL) $(CURL_FLAGS) https://docs.projectcalico.org/v3.6/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml
 	# replacement value needs to be in sync with "cluster_cidr" in vars.yml
 	sed -i.ORIG 's_192.168.0.0/16_172.17.0.0/16_g' $(CALICO_YML)
 	$(KUBECTL) apply -f $(CALICO_YML)
@@ -60,13 +60,13 @@ helm:
 	$(KUBECTL) -n kube-system wait pods --for=condition=Ready --timeout=30s -l app=helm,name=tiller
 
 dns:
-	mkdir -p $(WORKING_DIR)/dns && cd $(WORKING_DIR)/dns && $(CURL) $(CURL_FLAGS) https://raw.githubusercontent.com/kubernetes/kubernetes/release-1.12/cluster/addons/dns/coredns/coredns.yaml.sed
+	mkdir -p $(WORKING_DIR)/dns && cd $(WORKING_DIR)/dns && $(CURL) $(CURL_FLAGS) https://raw.githubusercontent.com/kubernetes/kubernetes/release-1.13/cluster/addons/dns/coredns/coredns.yaml.sed
 	cp $(DNS_YML).sed $(DNS_YML)
 	# replacement values needs to be in sync with "KUBELET_ARGS" in node.yml
 	sed -i 's/$$DNS_SERVER_IP/172.27.0.53/g' $(DNS_YML)
 	sed -i 's/$$DNS_DOMAIN/cluster.local/g' $(DNS_YML)
 	# use the latest 1.2.x image version
-	sed -i 's/coredns:1.2.2/coredns:1.2.6/g' $(DNS_YML)
+	sed -i 's/coredns:1.2.6/coredns:1.3.1/g' $(DNS_YML)
 	$(KUBECTL) apply -f $(DNS_YML)
 	$(KUBECTL) -n kube-system wait deploy --for=condition=Available --timeout=30s -l k8s-app=kube-dns
 	$(KUBECTL) -n kube-system wait pods --for=condition=Ready --timeout=30s -l k8s-app=kube-dns
