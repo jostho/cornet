@@ -105,17 +105,17 @@ Verify the built image
 
 Push the image to the private registry
 
-    buildah push --tls-verify=false jostho/ecgo:v0.2.0 docker://registry:5000/ecgo:v0.2.0
+    buildah push --tls-verify=false jostho/ecgo:v0.2.0 docker://registry:5000/jostho/ecgo:v0.2.0
 
 ## Deploy the image
 
 Ssh into bastion. Verify the image in the registry
 
-    skopeo inspect --tls-verify=false docker://registry:5000/ecgo:v0.2.0
+    skopeo inspect --tls-verify=false docker://registry:5000/jostho/ecgo:v0.2.0
 
 Create a pod
 
-    kubectl run ecgo --image=registry:5000/ecgo:v0.2.0 --port=8000 --restart=Never
+    kubectl run ecgo --image=registry:5000/jostho/ecgo:v0.2.0 --port=8000 --restart=Never
 
 Verify the pod
 
