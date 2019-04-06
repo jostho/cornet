@@ -8,7 +8,7 @@ tls_location: /dev/shm/kubernetes
 cluster_cidr: 172.17.0.0/16
 service_cluster_cidr: 172.27.0.0/16
 version:
-  haproxy: 1.9.5
+  haproxy: 1.9.6
   etcd: v3.3.12
   registry: v2.7.1
   kubernetes: v1.13.5
