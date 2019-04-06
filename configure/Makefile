@@ -19,10 +19,9 @@ TRAEFIK_RBAC_YML := $(WORKING_DIR)/traefik/traefik-rbac.yaml
 
 KUBEFEST_DIR := $(SRC_DIR)/kubefest
 PROMETHEUS_YML_DIR := $(SRC_DIR)/prometheus-operator/contrib/kube-prometheus/manifests
-LOKI_HELM_DIR := $(SRC_DIR)/loki/production/helm
 
 VERSION_PROMETHEUS_OPERATOR := bf59a33 # v0.29.0+
-VERSION_LOKI := adc42cc # master
+VERSION_LOKI := d75212d # master
 
 check:
 	$(ANSIBLE) --version | head -1
@@ -90,9 +89,9 @@ prometheus:
 	$(KUBECTL) apply -f $(PROMETHEUS_YML_DIR)/
 
 loki:
-	mkdir -p $(SRC_DIR) && cd $(SRC_DIR) && $(GIT) clone -q https://github.com/grafana/loki.git && cd $(SRC_DIR)/loki && $(GIT) checkout -q $(VERSION_LOKI)
-	# set promtail entry parser
-	$(HELM) install $(LOKI_HELM_DIR) --name loki --namespace monitoring --set loki.image.tag=master-$(VERSION_LOKI) --set promtail.image.tag=master-$(VERSION_LOKI) --set promtail.entryParser=raw
+	helm repo add loki https://grafana.github.io/loki/charts
+	# set helm options
+	$(HELM) install loki/loki --name loki --namespace monitoring --set loki.image.tag=master-$(VERSION_LOKI) --set promtail.image.tag=master-$(VERSION_LOKI) --set promtail.entryParser=raw
 
 .PHONY: check clean master node
 .PHONY: cluster kube-system-summary
