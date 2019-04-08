@@ -33,7 +33,7 @@ check:
 clean:
 	rm -f $(WORKING_DIR)/*
 
-cluster:  master node calico helm dns
+cluster:  master node calico helm dns traefik
 
 master:
 	$(ANSIBLE) $(ANSIBLE_FLAGS) master.yml
@@ -79,6 +79,10 @@ traefik:
 	sed -i '/--api/p' $(TRAEFIK_YML)
 	sed -i '0,/--api/s//--accesslog/' $(TRAEFIK_YML)
 	$(KUBECTL) apply -f $(TRAEFIK_YML)
+	# apply manifests from kubefest
+	if [ -d $(KUBEFEST_DIR)/traefik ] ; then kubectl apply -f $(KUBEFEST_DIR)/traefik/ ; fi
+	sleep 5 # kubectl can't wait on daemonset, so sleep until pods are scheduled
+	$(KUBECTL) -n kube-system wait pods --for=condition=Ready --timeout=30s -l k8s-app=traefik-ingress-lb
 
 prometheus:
 	mkdir -p $(SRC_DIR) && cd $(SRC_DIR) && $(GIT) clone -q https://github.com/coreos/prometheus-operator.git && cd $(SRC_DIR)/prometheus-operator && $(GIT) checkout -q $(VERSION_PROMETHEUS_OPERATOR)
