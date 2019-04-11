@@ -18,10 +18,10 @@ TRAEFIK_YML := $(WORKING_DIR)/traefik/traefik-ds.yaml
 TRAEFIK_RBAC_YML := $(WORKING_DIR)/traefik/traefik-rbac.yaml
 
 KUBEFEST_DIR := $(SRC_DIR)/kubefest
-PROMETHEUS_YML_DIR := $(SRC_DIR)/prometheus-operator/contrib/kube-prometheus/manifests
 
+PROMETHEUS_YML_DIR := $(SRC_DIR)/prometheus-operator/contrib/kube-prometheus/manifests
 VERSION_PROMETHEUS_OPERATOR := bf59a33 # v0.29.0+
-VERSION_LOKI := d75212d # master
+VERSION_LOKI := 5f56607 # master
 
 check:
 	$(ANSIBLE) --version | head -1
@@ -84,20 +84,25 @@ traefik:
 	sleep 5 # kubectl can't wait on daemonset, so sleep until pods are scheduled
 	$(KUBECTL) -n kube-system wait pods --for=condition=Ready --timeout=30s -l k8s-app=traefik-ingress-lb
 
-prometheus:
+monitoring:
+	# setup prometheus-operator for monitoring
 	mkdir -p $(SRC_DIR) && cd $(SRC_DIR) && $(GIT) clone -q https://github.com/coreos/prometheus-operator.git && cd $(SRC_DIR)/prometheus-operator && $(GIT) checkout -q $(VERSION_PROMETHEUS_OPERATOR)
 	# prometheus-adapter requires extension API Server, so skip that
 	rm -f $(PROMETHEUS_YML_DIR)/prometheus-adapter-*
 	# copy customized manifests from kubefest
 	if [ -d $(KUBEFEST_DIR)/prometheus-operator ] ; then cp $(KUBEFEST_DIR)/prometheus-operator/*.yaml $(PROMETHEUS_YML_DIR) ; fi
 	$(KUBECTL) apply -f $(PROMETHEUS_YML_DIR)/
-
-loki:
+	$(KUBECTL) -n monitoring wait deploy --for=condition=Available --timeout=30s -l k8s-app=prometheus-operator
+	$(KUBECTL) -n monitoring wait pods --for=condition=Ready --timeout=30s -l k8s-app=prometheus-operator
+	# setup loki for logs
 	helm repo add loki https://grafana.github.io/loki/charts
 	# set helm options
-	$(HELM) install loki/loki --name loki --namespace monitoring --set loki.image.tag=master-$(VERSION_LOKI) --set promtail.image.tag=master-$(VERSION_LOKI) --set promtail.entryParser=raw
+	$(HELM) install loki/loki-stack --name loki --namespace monitoring --set loki.image.tag=master-$(VERSION_LOKI) --set promtail.image.tag=master-$(VERSION_LOKI) --set promtail.entryParser=raw
+	$(KUBECTL) -n monitoring wait deploy --for=condition=Available --timeout=90s -l app=loki
+	$(KUBECTL) -n monitoring wait pods --for=condition=Ready --timeout=90s -l app=loki
+
 
 .PHONY: check clean master node
 .PHONY: cluster kube-system-summary
-.PHONY: calico helm dns
-.PHONY: traefik prometheus loki
+.PHONY: calico helm dns traefik
+.PHONY: monitoring
