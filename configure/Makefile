@@ -21,7 +21,7 @@ KUBEFEST_DIR := $(SRC_DIR)/kubefest
 
 PROMETHEUS_YML_DIR := $(SRC_DIR)/prometheus-operator/contrib/kube-prometheus/manifests
 VERSION_PROMETHEUS_OPERATOR := bf59a33 # v0.29.0+
-VERSION_LOKI := 5f56607 # master
+VERSION_LOKI := 1f1706f # master
 
 check:
 	$(ANSIBLE) --version | head -1
