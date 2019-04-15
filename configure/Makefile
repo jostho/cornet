@@ -21,7 +21,6 @@ KUBEFEST_DIR := $(SRC_DIR)/kubefest
 
 PROMETHEUS_YML_DIR := $(SRC_DIR)/prometheus-operator/contrib/kube-prometheus/manifests
 VERSION_PROMETHEUS_OPERATOR := bf59a33 # v0.29.0+
-VERSION_LOKI := 1f1706f # master
 
 check:
 	$(ANSIBLE) --version | head -1
@@ -97,7 +96,7 @@ monitoring:
 	# setup loki for logs
 	helm repo add loki https://grafana.github.io/loki/charts
 	# set helm options
-	$(HELM) install loki/loki-stack --name loki --namespace monitoring --set loki.image.tag=master-$(VERSION_LOKI) --set promtail.image.tag=master-$(VERSION_LOKI) --set promtail.entryParser=raw
+	$(HELM) install loki/loki-stack --name loki --namespace monitoring --set promtail.entryParser=raw
 	$(KUBECTL) -n monitoring wait deploy --for=condition=Available --timeout=90s -l app=loki
 	$(KUBECTL) -n monitoring wait pods --for=condition=Ready --timeout=90s -l app=loki
 
