@@ -84,7 +84,7 @@ Then configure the cluster from bastion
 
     cd ~/src/cornet/configure && make cluster
 
-Setup monitoring for the cluster. This installs [kube-prometheus](https://github.com/coreos/prometheus-operator/tree/master/contrib/kube-prometheus) manifests
+Setup monitoring for the cluster. This installs [kube-prometheus](https://github.com/coreos/kube-prometheus) manifests
 
     cd ~/src/cornet/configure && make monitoring
 

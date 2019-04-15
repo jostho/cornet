@@ -19,8 +19,8 @@ TRAEFIK_RBAC_YML := $(WORKING_DIR)/traefik/traefik-rbac.yaml
 
 KUBEFEST_DIR := $(SRC_DIR)/kubefest
 
-PROMETHEUS_YML_DIR := $(SRC_DIR)/prometheus-operator/contrib/kube-prometheus/manifests
-VERSION_PROMETHEUS_OPERATOR := bf59a33 # v0.29.0+
+PROMETHEUS_YML_DIR := $(SRC_DIR)/kube-prometheus/manifests
+VERSION_KUBE_PROMETHEUS := 3c10936 # master
 
 check:
 	$(ANSIBLE) --version | head -1
@@ -84,12 +84,12 @@ traefik:
 	$(KUBECTL) -n kube-system wait pods --for=condition=Ready --timeout=30s -l k8s-app=traefik-ingress-lb
 
 monitoring:
-	# setup prometheus-operator for monitoring
-	mkdir -p $(SRC_DIR) && cd $(SRC_DIR) && $(GIT) clone -q https://github.com/coreos/prometheus-operator.git && cd $(SRC_DIR)/prometheus-operator && $(GIT) checkout -q $(VERSION_PROMETHEUS_OPERATOR)
+	# setup kube-prometheus for monitoring
+	mkdir -p $(SRC_DIR) && cd $(SRC_DIR) && $(GIT) clone -q https://github.com/coreos/kube-prometheus.git && cd $(SRC_DIR)/kube-prometheus && $(GIT) checkout -q $(VERSION_KUBE_PROMETHEUS)
 	# prometheus-adapter requires extension API Server, so skip that
 	rm -f $(PROMETHEUS_YML_DIR)/prometheus-adapter-*
 	# copy customized manifests from kubefest
-	if [ -d $(KUBEFEST_DIR)/prometheus-operator ] ; then cp $(KUBEFEST_DIR)/prometheus-operator/*.yaml $(PROMETHEUS_YML_DIR) ; fi
+	if [ -d $(KUBEFEST_DIR)/kube-prometheus ] ; then cp $(KUBEFEST_DIR)/kube-prometheus/*.yaml $(PROMETHEUS_YML_DIR) ; fi
 	$(KUBECTL) apply -f $(PROMETHEUS_YML_DIR)/
 	$(KUBECTL) -n monitoring wait deploy --for=condition=Available --timeout=30s -l k8s-app=prometheus-operator
 	$(KUBECTL) -n monitoring wait pods --for=condition=Ready --timeout=30s -l k8s-app=prometheus-operator
